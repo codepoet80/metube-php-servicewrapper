@@ -33,7 +33,7 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
 * Make the clean-up script executable: `chmod +x youtube-cleanup.sh`
 * Use `crontab -e` to establish the clean-up schedule.
     + Mine looks like: `*/15 * * * * /var/www/metube/youtube-cleanup.sh`
-* Update the config.php file to point to:
+* Update the `config.php` file to point to:
     + Your MeTube endpoint URL -- which does not need to be exposed to the Internet (eg: localhost works fine)
     + Your MeTube port (eg: 8081)
     + The path to your downloads folder (established above)
@@ -53,7 +53,7 @@ There are 4 main functions of this service, each will be discussed briefly, with
 
 ### Search
 
-The search function works as a proxy for Google's YouTube search API, so that you don't have to embed your API key into older, and probably insecure, platforms. You send a search request to `search.php` with a GET request, and it sends you back the results from Google. If you set a client_key (or debug_key) value in your config.php, the client must send those values along with the request in the form of a header named `Client-Id`
+The search function works as a proxy for Google's YouTube search API, so that you don't have to embed your API key into older, and probably insecure, platforms. You send a search request to `search.php` with a GET request, and it sends you back the results from Google. If you set a client_key (or debug_key) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
 
 The query string of the GET request should contain the query, and the number of desired results:
 * `q=VIDEOTOSEARCHFOR`
@@ -83,7 +83,7 @@ Once the video request has been added to MeTube, you will need to poll for the a
 
 For this reason, this service cannot scale. No attempt has been made to solve this problem, in order to limit use to a small number of users. In my case, the remaining webOS community is probably less than 30 people in the world!
 
-A `list.php` request is a parameterless GET request. Client identification is the same as in search: if you set a client_key (or debug_key) value in your config.php, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
+A `list.php` request is a parameterless GET request. Client identification is the same as in search: if you set a client_key (or debug_key) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
 
 ### Play
 
