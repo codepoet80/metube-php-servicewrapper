@@ -8,7 +8,7 @@ This is a (non-Dockerized) PHP app that "wraps around" [Alexta69](https://github
 * The ability to access youtube-dl retreived content over the web
 * A clean-up script to remove videos (hopefully once they've been watched)
 
-I wrote this wrapper for older devices that can't access YouTube, can't use youtube-dl natively, and can't render MeTube's web UI. Such devices would have to be capable of making relatively simple HTTP calls (POST and GET) and of playing back MP4 video containers with MP4 video and AAC audio tracks. Specifically, I wrote this for legacy Palm/HP [webOS](http://www.webosarchive.com/) devices. Other clients, such as older Macs, could conceivably use this service -- but I haven't tested. Although the specific container and media format required for webOS devices is prescribed in the code, both MeTube and youtube-dl are capable of helping you get other file formats; simply tweak add.php to suit your needs.
+I wrote this wrapper for older devices that can't access YouTube, can't use youtube-dl natively, and can't render MeTube's web UI. Such devices would have to be capable of making relatively simple HTTP calls (POST and GET) and of playing back MP4 video containers with MP4 video and AAC audio tracks. Specifically, I wrote this for legacy Palm/HP [webOS](http://www.webosarchive.com/) devices. Other clients, such as older Macs, could conceivably use this service -- but I haven't tested. Although the specific container and media format required for webOS devices is prescribed in the code, both MeTube and youtube-dl are capable of helping you get other file formats; simply tweak `add.php` to suit your needs.
 
 Note: this project was *not* created to steal content from YouTube, and the creator does not condone the use of this project for that purpose. My intent was to facilitate older devices streaming YouTube content and deliberate efforts were taken to ensure caches and temporary files are purged.
 
@@ -43,7 +43,7 @@ That's it! Once the PHP app is running, you can begin to use it in even the simp
 
 ## webOS Usage
 
-This service is made to work with the webOS app [MeTube](http://appcatalog.webosarchive.com/showMuseumDetails.php?search=metube&app=1005774) on long defunct Palm and HP devices, like Pre and Touchpad. You can use the hosted version, provided by [webOS Archive](http://www.webosarchive.com) without configuration in that client.
+This service was made to work with the webOS app [MeTube](http://appcatalog.webosarchive.com/showMuseumDetails.php?search=metube&app=1005774) on long defunct Palm and HP devices, like Pre and Touchpad. You can use the hosted version, provided by [webOS Archive](http://www.webosarchive.com) without configuration in that client.
 
 You can also use that client by hosting the service yourself. Follow the set-up directions above, then use the app's Preferences scene to change your Endpoint and API keys. As well as your own Google API key, this service includes a few shared secrets that need to be configured both in the app's Preferences, and in the `config.php` of your service instance.
 
@@ -63,7 +63,7 @@ There are 4 main functions of this service, each will be discussed briefly, with
 
 ### Search
 
-The search function works as a proxy for Google's YouTube search API, so that you don't have to embed your API key into older, and probably insecure, platforms. You send a search request to `search.php` with a GET request, and it sends you back the results from Google. If you set a client_key (or debug_key) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
+The search function works as a proxy for Google's YouTube search API, so that you don't have to embed your API key into older, and probably insecure, platforms. You send a search request to `search.php` with a GET call, and it sends you back the results from Google. If you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
 
 The query string of the GET request should contain the query, and the number of desired results:
 * `q=VIDEOTOSEARCHFOR`
@@ -76,9 +76,9 @@ The result will be the JSON payload from Google, as described in their [API docu
 
 ### Add
 
-Once a user has selected the video they want to see, they will want to send an add request to MeTube to fetch and process the video on their behalf. MeTube uses youtube-dl to accomplish this, and this service uses simply proxies MeTube. Client identification is the same as in search: if you set a client_key (or debug_key) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
+Once a user has selected the video they want to see, they will want to send an *add* request to MeTube to fetch and process the video on their behalf. MeTube uses youtube-dl to accomplish this, and this service  simply proxies MeTube. Client identification is the same as in search: if you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
 
-Here we also add an additional layer of obfuscation -- both to protect the query content from being garbled in transmission, and to ensure the client is behaving as intended, where my intent is to not facilitate clients that would treat YouTube content unethically. With search, we only assert the server knows identity of the client, with a client shared secret. With add, we will also try to validate that the client is trusted by the server with a shared secret (with the caveat that no retro platform can have any assurance of trust!)
+Here we also add an additional layer of obfuscation -- both to protect the query content from being garbled in transmission, and to ensure the client is behaving as intended, where my intent is to not service unknown clients that might treat YouTube content unethically. With *Search*, we only asserted that the server knows identity of the client, using a client shared secret. With add, we will also try to validate that the client is trusted by the server with a server shared secret (with the caveat that no retro platform can have any assurance of trust!)
 
 If the your `config.php` includes a value for `server_id`, this value should be hidden within the POST request. The entire payload of the POST request should be constructed as follows:
 
@@ -89,21 +89,21 @@ If the request succeeds, a simple JSON response indicating "OK" will be returned
 
 ### List
 
-Once the video request has been added to MeTube, you will need to poll for the appearance of the processed file. MeTube does not issue a ticket, or maintain state for requests, but it does process requests in order. Assuming there aren't simultaneous (or close-to simultaneous) clients, your client can assume that the next file to appear in the list, is the file for your most recent Add request.
+Once the video request has been added to MeTube, you will need to poll for the appearance of the processed file. MeTube does not issue a ticket, or maintain state for requests, but it does process requests in order. Assuming there aren't simultaneous (or close-to-simultaneous) client requests, your client can assume that the next file to appear in the list is the file for your most recent *Add* request.
 
 Another caveat is that only new files are new -- if you send the same request again, you will not get a new file as a result. For that reason, maintaining the correct cleanup schedule (as set in cron, above) is important. Too aggressive, and you might delete a file you're using. Not aggressive enough, and you may deny service to a client. Mitigations were added in the webOS client to handle repeated requests within the clean-up schedule.
 
 For these reasons, this service cannot scale. No attempt has been made to solve these problem, in order to limit use to a small number of users. In my case, the remaining webOS community is probably less than 30 people in the world!
 
-A `list.php` request is a parameterless GET request. Client identification is the same as in search: if you set a client_key (or debug_key) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
+A `list.php` request is a parameterless GET request. Client identification is the same as in search: if you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
 
 ### Play
 
-Due to the constraints of the target client platform, the Play request has limited security and must be passed in-the-clear as a GET request. No headers can be included. As a result, the obfuscation is similar to the Add request:
+Due to the constraints of my target client platform, the Play request has limited security and must be passed in-the-clear as a GET request. No headers can be included. As a result, the obfuscation is similar to the Add request:
 
 If your `config.php` includes a value for `server_id`, this value should be hidden within the Query string. The entire query string to `play.php` should be constructed as follows:
 
 * `video=FILENAME` -- this is the URL encoded version of the plain text filename of the video to play, as returned by the List function. 
 * `requestid=` -- the encoded request with the `client_key` value and a | (pipe) prefixing the base64 encoded file name, as returned by the List function.
 
-The video value, and the decoded filename in the request ID must match. This deliberate obfuscation is to prevent a user from easily constructing a download query. It is up to the developer of the Client code to ensure the video is not retained on the client device.
+The video value, and the decoded filename in the request ID, must match. This deliberate obfuscation is to prevent a user from easily constructing a download query. It is up to the developer of the Client code to ensure the video is not retained on the client device.
