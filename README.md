@@ -43,7 +43,7 @@ That's it! Once the PHP app is running, you can begin to use it in even the simp
 
 ## webOS Usage
 
-This service is made to work with the webOS app [MeTube]([http://appcatalog.webosarchive.com/showMuseumDetails.php?search=metube&app=1005774) on long defunct Palm and HP devices, like Pre and Touchpad. You can use the hosted version, provided by [webOS Archive](http://www.webosarchive.com) without configuration in that client.
+This service is made to work with the webOS app [MeTube](http://appcatalog.webosarchive.com/showMuseumDetails.php?search=metube&app=1005774) on long defunct Palm and HP devices, like Pre and Touchpad. You can use the hosted version, provided by [webOS Archive](http://www.webosarchive.com) without configuration in that client.
 
 You can also use that client by hosting the service yourself. Follow the set-up directions above, then use the app's Preferences scene to change your Endpoint and API keys. As well as your own Google API key, this service includes a few shared secrets that need to be configured both in the app's Preferences, and in the `config.php` of your service instance.
 
