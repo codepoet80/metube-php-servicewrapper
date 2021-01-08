@@ -1,4 +1,4 @@
-#PHP Service Wrapper for MeTube
+# PHP Service Wrapper for MeTube
 
 Depends on [MeTube](https://github.com/alexta69/metube)
 
