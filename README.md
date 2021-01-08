@@ -107,3 +107,12 @@ If your `config.php` includes a value for `server_id`, this value should be hidd
 * `requestid=` -- the encoded request with the `client_key` value and a | (pipe) prefixing the base64 encoded file name, as returned by the List function.
 
 The video value, and the decoded filename in the request ID, must match. This deliberate obfuscation is to prevent a user from easily constructing a download query. It is up to the developer of the Client code to ensure the video is not retained on the client device.
+
+## Debugging
+
+Depending on how you deploy the various components, you may run into connectivity issues. While debugging it might be helpful to understand the call stack for each function:
+
+* *Search*: client > php-service-wrapper > Google API
+* *Add*: client > php-service-wrapper > MeTube > youtube-dl > YouTube.com
+* *List*: client > php-service-wrapper
+* *Play*: client > php-service-wrapper
