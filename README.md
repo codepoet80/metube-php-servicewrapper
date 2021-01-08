@@ -41,7 +41,17 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
 
 That's it! Once the PHP app is running, you can begin to use it in even the simplest of web clients.
 
-## Usage
+## webOS Usage
+
+This service is made to work with the webOS app [http://appcatalog.webosarchive.com/showMuseumDetails.php?search=metube&app=1005774](MeTube) on long defunct Palm and HP devices, like Pre and Touchpad. You can use the hosted version, provided by [http://www.webosarchive.com](webOS) Archive without configuration in that client.
+
+You can also use that client by hosting the service yourself. Follow the set-up directions above, then use the app's Preferences scene to change your Endpoint and API keys. As well as your own Google API key, this service includes a few shared secrets that need to be configured both in the app's Preferences, and in the `config.php` of your service instance.
+
+See `config-sample.php` for details on setting up your shared secrets, to help keep your instance private.
+
+(Note: that due to the age of webOS devices, this is not real security, only obfuscation. Since everything must be passed in the clear, it is vulnerable to common man-in-the-middle attacks. You probably aren't using your 10 year old Touchpad in public anyway, but just keep this in mind!)
+
+## Alternate Client Usage
 
 As discussed, the service was written with a specific client and use-case in mind. Its potentially flexible, but that would be up to you.
 
