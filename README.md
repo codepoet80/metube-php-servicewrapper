@@ -2,10 +2,10 @@
 
 ## Introduction
 
-This is a (non-Dockerized) PHP app that "wraps around" [Alexta69]https://github.com/alexta69/()'s excellent [MeTube](https://github.com/alexta69/metube) Web GUI for [youtube-dl](https://github.com/ytdl-org/youtube-dl). For most use-cases, you can just directly use MeTube in a modern browser, and you don't need this project. This wrapper does add some features, depending on configuration, including:
+This is a (non-Dockerized) PHP app that "wraps around" [Alexta69](https://github.com/alexta69/)'s excellent [MeTube](https://github.com/alexta69/metube) Web GUI for [youtube-dl](https://github.com/ytdl-org/youtube-dl). For most use-cases, you can just directly use MeTube in a modern browser, and you don't need this project. This wrapper does add some features, depending on configuration, including:
 
-* The ability to access youtube-dl retreived content over the web
 * The ability to search YouTube for videos by name
+* The ability to access youtube-dl retreived content over the web
 * A clean-up script to remove videos (hopefully once they've been watched)
 
 I wrote this wrapper for older devices that can't access YouTube, can't use youtube-dl natively, and can't render MeTube's web UI. Such devices would have to be capable of making relatively simple HTTP calls (POST and GET) and of playing back MP4 video containers with MP4 video and AAC audio tracks. Specifically, I wrote this for legacy Palm/HP [webOS](http://www.webosarchive.com/) devices. Other clients, such as older Macs, could conceivably use this service -- but I haven't tested. Although the specific container and media format required for webOS devices is prescribed in the code, both MeTube and youtube-dl are capable of helping you get other file formats; simply tweak add.php to suit your needs.
@@ -27,7 +27,7 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
 
 * Create a directory to store YouTube downloads, ensure the Apache user and group (usually www-data in Linux) has read and write access to that folder 
     + see this [Issue](https://github.com/alexta69/metube/issues/7) where I worked through permissions, so you don't repeat my mistakes!
-* Get MeTube working -- the Docker container actually works very well. Follow the [documentation](https://github.com/alexta69/metube/blob/master/README.md) on that project for guidance
+* Get MeTube working with that download folder -- the Docker container actually works very well. Follow the [documentation](https://github.com/alexta69/metube/blob/master/README.md) on that project for guidance
 * Configure an Apache Site for the PHP web app (or add a directory to an existing site)
 * Clone this repo into that directory
 * Make the clean-up script executable: `chmod +x youtube-cleanup.sh`
@@ -49,11 +49,11 @@ Additionally, the service was crafted in a way that attempts to protect ownershi
 
 As an intended result of these two caveats, client requests may appear unnecessarily obscure. This is by design!
 
-There are 4 main functions of this service, each will be discussed briefly, with some details of how to form a request. For examples of the code in Javascript, see the [metube-model.js](https://github.com/codepoet80/webos-metube/blob/main/app/models/metube-model.js) file in the (webOS client app)[https://github.com/codepoet80/webos-metube] (webOS was a Javascript-based OS).
+There are 4 main functions of this service, each will be discussed briefly, with some details of how to form a request. For examples of the code in Javascript, see the [metube-model.js](https://github.com/codepoet80/webos-metube/blob/main/app/models/metube-model.js) file in the [webOS client app](https://github.com/codepoet80/webos-metube) (webOS was a Javascript-based OS).
 
 ### Search
 
-The search function works as a proxy for Google's YouTube search API, so that you don't have to embed your API key into older, and probably insecure, platforms. You send a search request to search.php with a GET request, and it sends you back the results from Google. If you set a client_key (or debug_key) value in your config.php, the client must send those values along with the request in the form of a header named `Client-Id`
+The search function works as a proxy for Google's YouTube search API, so that you don't have to embed your API key into older, and probably insecure, platforms. You send a search request to `search.php` with a GET request, and it sends you back the results from Google. If you set a client_key (or debug_key) value in your config.php, the client must send those values along with the request in the form of a header named `Client-Id`
 
 The query string of the GET request should contain the query, and the number of desired results:
 * `q=VIDEOTOSEARCHFOR`
@@ -66,11 +66,11 @@ The result will be the JSON payload from Google, as described in their [API docu
 
 ### Add
 
-Once a user has selected the video they want to see, they will want to send an add request to MeTube to fetch and process the video on their behalf. MeTube uses youtube-dl to accomplish this, and this service uses simply proxies MeTube. Client identification is the same as in search: if you set a client_key (or debug_key) value in your config.php, the client must send those values along with the request in the form of a header named `Client-Id`
+Once a user has selected the video they want to see, they will want to send an add request to MeTube to fetch and process the video on their behalf. MeTube uses youtube-dl to accomplish this, and this service uses simply proxies MeTube. Client identification is the same as in search: if you set a client_key (or debug_key) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
 
 Here we also add an additional layer of obfuscation -- both to protect the query content from being garbled in transmission, and to ensure the client is behaving as intended, where my intent is to not facilitate clients that would treat YouTube content unethically. With search, we only assert the server knows identity of the client, with a client shared secret. With add, we will also try to validate that the client is trusted by the server with a shared secret (with the caveat that no retro platform can have any assurance of trust!)
 
-If the your config.php includes a value for `server_id`, this value should be hidden within the POST request. The entire payload of the POST request should be constructed as follows:
+If the your `config.php` includes a value for `server_id`, this value should be hidden within the POST request. The entire payload of the POST request should be constructed as follows:
 
 * The YouTube URL the user wants to watch, base64 encoded
 * The `server_id` contiguously placed at random within the encoded string
@@ -83,13 +83,13 @@ Once the video request has been added to MeTube, you will need to poll for the a
 
 For this reason, this service cannot scale. No attempt has been made to solve this problem, in order to limit use to a small number of users. In my case, the remaining webOS community is probably less than 30 people in the world!
 
-A list request is a parameterless GET request. Client identification is the same as in search: if you set a client_key (or debug_key) value in your config.php, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
+A `list.php` request is a parameterless GET request. Client identification is the same as in search: if you set a client_key (or debug_key) value in your config.php, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
 
 ### Play
 
 Due to the constraints of the target client platform, the Play request has limited security and must be passed in-the-clear as a GET request. No headers can be included. As a result, the obfuscation is similar to the Add request:
 
-If the your config.php includes a value for `server_id`, this value should be hidden within the Query string. The entire query string should be constructed as follows:
+If the your `config.php` includes a value for `server_id`, this value should be hidden within the Query string. The entire query string to `play.php` should be constructed as follows:
 
 * `video=FILENAME` -- this is the URL encoded version of the plain text filename of the video to play, as returned by the List function. 
 * `requestid=` -- the encoded request with the `client_key` value and a | (pipe) prefixing the base64 encoded file name, as returned by the List function.
