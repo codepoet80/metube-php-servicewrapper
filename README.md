@@ -81,7 +81,9 @@ If the request succeeds, a simple JSON response indicating "OK" will be returned
 
 Once the video request has been added to MeTube, you will need to poll for the appearance of the processed file. MeTube does not issue a ticket, or maintain state for requests, but it does process requests in order. Assuming there aren't simultaneous (or close-to simultaneous) clients, your client can assume that the next file to appear in the list, is the file for your most recent Add request.
 
-For this reason, this service cannot scale. No attempt has been made to solve this problem, in order to limit use to a small number of users. In my case, the remaining webOS community is probably less than 30 people in the world!
+Another caveat is that only new files are new -- if you send the same request again, you will not get a new file as a result. For that reason, maintaining the correct cleanup schedule (as set in cron, above) is important. Too aggressive, and you might delete a file you're using. Not aggressive enough, and you may deny service to a client. Mitigations were added in the webOS client to handle repeated requests within the clean-up schedule.
+
+For these reasons, this service cannot scale. No attempt has been made to solve these problem, in order to limit use to a small number of users. In my case, the remaining webOS community is probably less than 30 people in the world!
 
 A `list.php` request is a parameterless GET request. Client identification is the same as in search: if you set a client_key (or debug_key) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
 
@@ -89,7 +91,7 @@ A `list.php` request is a parameterless GET request. Client identification is th
 
 Due to the constraints of the target client platform, the Play request has limited security and must be passed in-the-clear as a GET request. No headers can be included. As a result, the obfuscation is similar to the Add request:
 
-If the your `config.php` includes a value for `server_id`, this value should be hidden within the Query string. The entire query string to `play.php` should be constructed as follows:
+If your `config.php` includes a value for `server_id`, this value should be hidden within the Query string. The entire query string to `play.php` should be constructed as follows:
 
 * `video=FILENAME` -- this is the URL encoded version of the plain text filename of the video to play, as returned by the List function. 
 * `requestid=` -- the encoded request with the `client_key` value and a | (pipe) prefixing the base64 encoded file name, as returned by the List function.
