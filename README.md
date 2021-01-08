@@ -116,3 +116,5 @@ Depending on how you deploy the various components, you may run into connectivit
 * *Add*: client > php-service-wrapper > MeTube > youtube-dl > YouTube.com
 * *List*: client > php-service-wrapper
 * *Play*: client > php-service-wrapper
+
+If you're attempting to Dockerize this service wrapper, it must be able to communicate with the MeTube docker container over HTTP on the specified port.
