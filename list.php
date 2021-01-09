@@ -11,14 +11,14 @@ $request_key = '';
 $request_headers = getallheaders();
 if ($client_key != '' && $debug_key != '') {	//If configuration includes both client key values, enforce them
 	if (!array_key_exists('Client-Id', $request_headers)) {
-			echo "{\"status\": \"error\", \"msg\": \"ERROR: Not authorized\"}";
-			die;
+		echo "{\"status\": \"error\", \"msg\": \"ERROR: Not authorized\"}";
+		die;
 	} else {
-			$request_key = $request_headers['Client-Id'];
-			if (($request_key != $client_key) && ($request_key != $debug_key)) {
-					echo "{\"status\": \"error\", \"msg\": \"ERROR: No authorized user.\"}";
-					die;
-			}
+		$request_key = $request_headers['Client-Id'];
+		if (($request_key != $client_key) && ($request_key != $debug_key)) {
+				echo "{\"status\": \"error\", \"msg\": \"ERROR: No authorized user.\"}";
+				die;
+		}
 	}
 }
 
