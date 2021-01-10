@@ -28,7 +28,7 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
 	}
 }
 
-if ($server_id == '' || strpos($request, $server_id) !== false)		//If configuration includes a server key value, enforce it
+if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== false))		//If configuration includes a server key value, enforce it
 {
 	//decode inbound request
 	$request = str_replace($server_id, "", $request);
