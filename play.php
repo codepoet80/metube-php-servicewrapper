@@ -7,13 +7,13 @@ $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
 $debug_mode = true;
 
+$request_id = $_GET['requestid'];
 //figure out the query
 $video_requested = $_SERVER['QUERY_STRING'];
 $video_requested = str_replace("&requestid=". $request_id, "", $video_requested);
 $video_requested = str_replace("video=", "", urldecode($video_requested));
 
 //validate request id
-$request_id = $_GET['requestid'];
 if ($server_id != '' && strpos($request_id, $server_id) === false) 		//If configuration includes a server key value, enforce it
 {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: Not authorized\"}";
