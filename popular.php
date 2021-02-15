@@ -29,11 +29,6 @@ if (isset($_GET["key"])) {
 	$api_key = $_GET["key"];
 }
 
-if ($the_query == "") {
-	echo "{\"status\": \"error\", \"msg\": \"ERROR: No query.\"}";
-	die;
-}
-
 $search_path = "https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&regionCode=US&key=". $api_key;
 
 $myfile = fopen($search_path, "rb");
