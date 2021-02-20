@@ -47,6 +47,9 @@ if (!isset($content) || $content == "") {
 	die;
 }
 
+print_r($content);
+die;
+
 $json_a = json_decode($content);
 $items = $json_a->items;
 $newitems = array();
