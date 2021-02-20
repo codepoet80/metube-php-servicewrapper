@@ -43,7 +43,7 @@ That's it! Once the PHP app is running, you can begin to use it in even the simp
 
 ## Installation in Docker Container
 
-* Community contributor Nomad84 has provided [documentation on his approach to containerizing the Service Wrapper.](Dockerize.md)
+* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. Those [instructions are provided here](Dockerize.md) as a reference only.
 
 ## webOS Usage
 
