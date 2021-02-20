@@ -48,18 +48,5 @@ if (!isset($content) || $content == "") {
 }
 
 print_r($content);
-die;
 
-$json_a = json_decode($content);
-$items = $json_a->items;
-$newitems = array();
-foreach ($items as $item) { 
-	foreach ( $item as $key => $val) {
-		if ($key == "contentDetails"){
-			array_push($newitems, $item);
-		}
-	 }
-}
-$json_a->items = $newitems;
-print_r (json_encode($json_a));
 ?>
