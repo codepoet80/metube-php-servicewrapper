@@ -1,6 +1,6 @@
 # Dockerizing the Service Wrapper
 
-These instructions provided by Nomad84
+_These instructions provided by [h8pewou](https://github.com/h8pewou/)_
 
 + Create a new directory for metube related files
 ```
@@ -14,7 +14,7 @@ cd $WEBOS-METUBE
 
 + Create a config file based on this:
     + [https://raw.githubusercontent.com/h8pewou/legacy_webos/main/metube-webos-docker-compose.yml](https://raw.githubusercontent.com/h8pewou/legacy_webos/main/metube-webos-docker-compose.yml)
-+ You will have to change the values in the config file! Obtain a your Youtube API key from Google.
++ You will have to change the values in the config file! Obtain your Youtube API key from Google.
     + `nano metube-php-servicewrapper/config.php`
 
 + Create your docker-compose.yaml based on this:
@@ -34,3 +34,4 @@ cd $WEBOS-METUBE
 
 + Next step: setup a clean-up solution for $WEBOS-METUBE/downloads
     + Example clean-up script is available at $WEBOS-METUBE/metube-php-servicewrapper/youtube-cleanup.sh 
+    + Example crontab implementation: `9 9 * * * /usr/bin/find /home/metube-webos/downloads/*.mp4 -type f -amin +100 -exec rm -f {} \;`
