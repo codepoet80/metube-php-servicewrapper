@@ -64,14 +64,11 @@ function extract_reddit_video_link(string $post_url)
     if (!isset($post_url) or trim($post_url) == '' or strpos($post_url, 'reddit.com') === false) {
         throw new Exception("You must provide a Reddit post url");
     }
-    $this->post_url = $post_url;
     $data = json_decode(file_get_contents("" . $post_url . ".json"), true);
-    $this->data = $data;
     if ($data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['is_gif'] == true) {
         throw new Exception("Video is actually a gif");
     }
     $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
-    $this->video_link = $video_link;
     return $video_link;
 }
 
