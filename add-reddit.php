@@ -46,7 +46,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $preset = 'fast';
     $crf = 20;
     $save = $config['file_dir'] . uniqid() . ".mp4";
-    $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline '" . $save . "' 2>&1";
+    $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline -movflags +faststart '" . $save . "' 2>&1";
     if ($debugMode) {
         $output = shell_exec($command);
         echo "{\"status\": \"ok\", \"command\", \"" . $command . "\", \"output\": \"" . $output . "\"}";
@@ -69,7 +69,8 @@ function extract_reddit_video_link(string $post_url)
     }
     $data = json_decode(file_get_contents("" . $post_url . ".json"), true);
     if ($data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['is_gif'] == true) {
-	echo "{\"status\": \"error\", \"msg\": \"ERROR: Requested video is actuall a gif\"}";
+    	$video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
+	echo "{\"status\": \"error\", \"msg\": \"ERROR: Requested video is actually a gif\", \"path\": \"" . base64_encode($video_link) . "\"}";
 	die;
     }
     $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
@@ -80,7 +81,7 @@ function execute_async_shell_command($command = null){
     if(!$command){
         throw new Exception("No command given");
     }
-   
+
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') { // windows
         system($command." > NUL");
     } else{  //*nix
