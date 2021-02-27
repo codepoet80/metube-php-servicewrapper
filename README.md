@@ -22,6 +22,7 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + php-gd
     + php-xml
     + php7.2-curl
+* FFMpeg
 
 ## Installation on Bare Metal
 

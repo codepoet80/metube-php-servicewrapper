@@ -3,6 +3,7 @@
 Request a Reddit video, converted by FFMpeg
 Thanks to https://github.com/cp6/Reddit-video-downloader/blob/master/rdt-video.php
 */
+$debugMode = false; //Switch to true to get verbose shell command output
 
 header('Content-Type: application/json');
 
@@ -46,14 +47,13 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $crf = 20;
     $save = $config['file_dir'] . uniqid() . ".mp4";
     $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline '" . $save . "' 2>&1";
-    $output = shell_exec($command);
-
-    if ($err) {
-	echo "{\"status\": \"error\", \"msg\": \"ERROR: Download request error.\"}";
-        die;
+    if ($debugMode) {
+        $output = shell_exec($command);
+        echo "{\"status\": \"ok\", \"command\", \"" . $command . "\", \"output\": \"" . $output . "\"}";
     }
     else {
-	echo "{\"status\": \"ok\", \"command\", \"" . $command . "\", \"output\": \"" . $output . "\"}";
+        execute_async_shell_command($command);
+        echo "{\"status\": \"ok\"}";
     }
 }
 else
@@ -75,5 +75,17 @@ function extract_reddit_video_link(string $post_url)
     $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
     return $video_link;
 }
+
+function execute_async_shell_command($command = null){
+    if(!$command){
+        throw new Exception("No command given");
+    }
+   
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') { // windows
+        system($command." > NUL");
+    } else{  //*nix
+        shell_exec("/usr/bin/nohup ".$command." >/dev/null 2>&1 &");
+    }
+ }
 
 ?>
