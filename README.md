@@ -22,12 +22,13 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + php-gd
     + php-xml
     + php7.2-curl
-* FFMpeg
+* FFMpeg (If you want to support Reddit videos)
 
 ## Installation on Bare Metal
 
 * Create a directory to store YouTube downloads, ensure the Apache user and group (usually www-data in Linux) has read and write access to that folder 
     + see this [Issue](https://github.com/alexta69/metube/issues/7) where I worked through permissions, so you don't repeat my mistakes!
+    + successfully writing with FFMPEG required everyone to have read/write access to this folder, so don't include it in your webserver directly!
 * Get MeTube working with that download folder -- the Docker container actually works very well. Follow the [documentation](https://github.com/alexta69/metube/blob/master/README.md) on that project for guidance
 * Configure an Apache Site for the PHP web app (or add a directory to an existing site)
 * Clone this repo into that directory
