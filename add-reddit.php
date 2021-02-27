@@ -36,36 +36,29 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $request = base64_decode($request); //Requested Reddit URL
     $request = extract_reddit_video_link($request);    //Converted Reddit video URL
 
-//echo "request: " . $request;
-
     $try_ffmpeg = trim(shell_exec('type ffmpeg'));
-
-//echo "\r\nffmpeg: " . $try_ffmpeg;
-
     if (empty($try_ffmpeg) || strpos($try_ffmpeg, "not found") !== false) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server.\"}";
         die;
     }
-echo "about to do command";
 
     $preset = 'fast';
     $crf = 20;
-    $command = "ffmpeg -i $request -c:v libx264 -preset $preset -crf $crf 'save_as.mp4'";
-    echo $command;
-    die;
-    echo shell_exec($command);
+    $save = $config['file_dir'] . uniqid() . ".mp4";
+    $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline '" . $save . "' 2>&1";
+    $output = shell_exec($command);
 
     if ($err) {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: Download request error.\"}";
         die;
     }
     else {
-        echo $response;
+	echo "{\"status\": \"ok\", \"command\", \"" . $command . "\", \"output\": \"" . $output . "\"}";
     }
 }
 else
 {
-	echo "{\"status\": \"error\", \"msg\": \"ERROR: Bad request content.\"}";
+    echo "{\"status\": \"error\", \"msg\": \"ERROR: Bad request content.\"}";
 }
 
 function extract_reddit_video_link(string $post_url)
