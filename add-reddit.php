@@ -63,7 +63,11 @@ else
 
 function extract_reddit_video_link(string $post_url)
 {
+<<<<<<< HEAD
     if (!isset($post_url) or trim($post_url) == '' or (strpos($post_url, 'reddit.com') === false) && strpos($post_url, 'v.redd.it') === false) {
+=======
+    if (!isset($post_url) or trim($post_url) == '' or strpos($post_url, 'reddit.com') === false) {
+>>>>>>> 1a31c840352ae79382836e6f13abe7d3fbaeafad
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No Reddit URL found in request.\"}";
 	die;
     }
