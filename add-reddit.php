@@ -68,11 +68,6 @@ function extract_reddit_video_link(string $post_url)
 	die;
     }
     $data = json_decode(file_get_contents("" . $post_url . ".json"), true);
-    if ($data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['is_gif'] == true) {
-    	$video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
-	echo "{\"status\": \"error\", \"msg\": \"ERROR: Requested video is actually a gif\", \"path\": \"" . base64_encode($video_link) . "\"}";
-	die;
-    }
     $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
     return $video_link;
 }
@@ -87,6 +82,6 @@ function execute_async_shell_command($command = null){
     } else{  //*nix
         shell_exec("/usr/bin/nohup ".$command." >/dev/null 2>&1 &");
     }
- }
+}
 
 ?>
