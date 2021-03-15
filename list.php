@@ -24,9 +24,9 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
 
 //make file list, checking for files that are still changing
 if(is_dir($dir)){
-	$check_array = list_dir_contents($dir);
-	sleep(1);
-    $file_array = list_dir_contents($dir);
+	$check_array = list_dir_contents($dir);	//get contents of directory with file sizes
+	sleep(1);	//wait a second to see if any files are still being written
+    $file_array = list_dir_contents($dir);	//get contents of directory with sizes again to exclude busy files
 	$ready_array = array();
 	foreach ($file_array as $thisfile) {
 		$changed = false;
@@ -37,7 +37,7 @@ if(is_dir($dir)){
 				}
 			}
 		}
-		if (!$changed) {
+		if (!$changed) {	//reformat for client schema
 			$newfileObj = (object)[
 				'file' => encode_response($thisfile->file, $server_id),
 			];
