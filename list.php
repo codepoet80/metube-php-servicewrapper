@@ -22,29 +22,50 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
 	}
 }
 
-//make file list
-$list = array(); //main array
+//make file list, checking for files that are still changing
 if(is_dir($dir)){
-    if($dh = opendir($dir)){
+	$check_array = list_dir_contents($dir);
+	sleep(1);
+    $file_array = list_dir_contents($dir);
+	$ready_array = array();
+	foreach ($file_array as $thisfile) {
+		$changed = false;
+		foreach ($check_array as $checkfile) {
+			if ($checkfile->file == $thisfile->file) {
+				if ($checkfile->size != $thisfile->size) {
+					$changed = true;
+				}
+			}
+		}
+		if (!$changed) {
+			$newfileObj = (object)[
+				'file' => encode_response($thisfile->file, $server_id),
+			];
+			array_push($ready_array, $newfileObj);
+		}
+	}
+	$return_array = array('files'=> $ready_array);
+    echo json_encode($return_array);
+}
+
+function list_dir_contents($dir) {
+	$list = array(); //main array
+	if($dh = opendir($dir)){
         while(($file = readdir($dh)) != false){
             if($file == "." or $file == ".." or strpos($file, ".") == false or strpos($file, ".php") != false or strpos($file, ".mp4.part") != false){
                 //skip this file
             } else { //create object with two fields
-		$path = $dir . "/" . $file;
-		$ret_file = $file;
-		if ($request_key == $debug_key)
-			$ret_file = $ret_file . "|" . filesize($path);
-		$ret_file = encode_response($ret_file, $server_id);
-                $list3 = array(
-                'file' => $ret_file);
-                array_push($list, $list3);
-
+				$path = $dir . "/" . $file;
+				$ret_file = $file;
+                $newfileObj = (object)[
+					'file' => $ret_file,
+					'size' => filesize($path)
+				];
+                array_push($list, $newfileObj);
             }
         }
     }
-
-    $return_array = array('files'=> $list);
-    echo json_encode($return_array);
+	return $list;
 }
 
 function encode_response($the_response, $server_id) {
