@@ -34,8 +34,12 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
 	$request = str_replace($server_id, "", $request);
 	$request = base64_decode($request);
 
+	$quality = "bestvideo";	//allow video quality override at client request
+	if (array_key_exists('Quality', $request_headers)) {
+		$quality = $request_headers['Quality'];
+	}
 	//prepare outbound request
-	$request = "{\"url\":\"" . $request . "\", \"quality\":\"custom:bestvideo[ext=mp4]+bestaudio[ext=aac]/best[ext=mp4]/best\"}";
+	$request = "{\"url\":\"" . $request . "\", \"quality\":\"custom:" . $quality ."[ext=mp4]+bestaudio[ext=aac]/best[ext=mp4]/best\"}";
 
 	//make outbound request to metube
 	$curl = curl_init();
