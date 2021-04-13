@@ -45,15 +45,16 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
 
     $preset = 'fast';
     $crf = 20;
-    $save = $config['file_dir'] . uniqid() . ".mp4";
-    $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline -movflags +faststart '" . $save . "' 2>&1";
+    $save = uniqid;
+    $savepath = $config['file_dir'] . $save . ".mp4";
+    $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline -movflags +faststart '" . $savepath . "' 2>&1";
     if ($debugMode) {
         $output = shell_exec($command);
         echo "{\"status\": \"ok\", \"command\", \"" . $command . "\", \"output\": \"" . $output . "\"}";
     }
     else {
         execute_async_shell_command($command);
-        echo "{\"status\": \"ok\"}";
+	echo "{\"status\": \"ok\", \"target\": \"" . $save . ".mp4\"}";
     }
 }
 else
