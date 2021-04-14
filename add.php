@@ -65,7 +65,7 @@ if (true == true || $server_id == '' || ($server_id != '' && strpos($request, $s
     }
     else {
         execute_async_shell_command($command);
-        echo "{\"status\": \"ok\", \"targets\": \"" . $save . ".mp4\"}";
+        echo "{\"status\": \"ok\", \"target\": \"" . $save . ".mp4\"}";
     }
 }
 else
