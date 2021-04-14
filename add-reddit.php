@@ -8,8 +8,6 @@ $debugMode = false; //Switch to true to get verbose shell command output
 header('Content-Type: application/json');
 
 $config = include('config.php');
-$metube_url = $config['metube_url'] . "/add";
-$metube_port = $config['metube_port'];
 $server_id = $config['server_id'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
@@ -37,6 +35,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $request = base64_decode($request); //Requested Reddit URL
     $request = extract_reddit_video_link($request);    //Converted Reddit video URL
 
+    //check if ffmpeg exists
     $try_ffmpeg = trim(shell_exec('type ffmpeg'));
     if (empty($try_ffmpeg) || strpos($try_ffmpeg, "not found") !== false) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server.\"}";

@@ -35,21 +35,29 @@ if (true == true || $server_id == '' || ($server_id != '' && strpos($request, $s
     $request = str_replace($server_id, "", $request);
     $request = base64_decode($request); //Requested Reddit URL
 
+    //check if ffmpeg exists
     $try_ffmpeg = trim(shell_exec('type ffmpeg'));
     if (empty($try_ffmpeg) || strpos($try_ffmpeg, "not found") !== false) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server. Ensure it is in the PATH.\"}";
         die;
     }
+
+    //check if youtube-dl exists
     $try_youtubedl = trim(shell_exec('type youtube-dl'));
     if (empty($try_youtubedl) || strpos($try_youtubedl, "not found") !== false) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: Youtube-dl not found on server. Ensure it is in the PATH.\"}";
         die;
     }
+    //determine quality
+    $quality = "bestvideo";	//allow video quality override at client request
+	if (array_key_exists('Quality', $request_headers)) {
+		$quality = $request_headers['Quality'];
+	}
 
     $save = uniqid();
-    $command = dirname(__FILE__) . "/getconvertyoutube.sh " . $request . " " . $file_dir . " " . $save;
+    $command = dirname(__FILE__) . "/getconvertyoutube.sh " . $request . " " . $file_dir . " " . $save . " " . $quality;
     if (strtolower($request_headers['Convert']) == "true" || strtolower($request_headers['convert']) == "true") {
-	$command = $command . " convert";
+	    $command = $command . " convert";
     }
     if ($debugMode) {
         //$output = shell_exec($command);

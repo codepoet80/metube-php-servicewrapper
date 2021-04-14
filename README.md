@@ -2,13 +2,14 @@
 
 ## Introduction
 
-This is a (non-Dockerized) PHP app that "wraps around" [Alexta69](https://github.com/alexta69/)'s excellent [MeTube](https://github.com/alexta69/metube) Web GUI for [youtube-dl](https://github.com/ytdl-org/youtube-dl). For most use-cases, you can just directly use MeTube in a modern browser, and you don't need this project. This wrapper does add some features, depending on configuration, including:
+This is a (non-Dockerized) PHP app that "wraps around" [youtube-dl](https://github.com/ytdl-org/youtube-dl) in support of apps on legacy devices. If you have a modern web browser, you probably want the excellent [MeTube web service by Alexta69](https://github.com/alexta69/), and you don't need this project. This wrapper effectively proxies some features, depending on configuration, including:
 
 * The ability to search YouTube for videos by name
 * The ability to access youtube-dl retreived content over the web
+* The ability to convert YouTube and Reddit videos to retro-friendly formats
 * A clean-up script to remove videos (hopefully once they've been watched)
 
-I wrote this wrapper for older devices that can't access YouTube, can't use youtube-dl natively, and can't render MeTube's web UI. Such devices would have to be capable of making relatively simple HTTP calls (POST and GET) and of playing back MP4 video containers with MP4 video and AAC audio tracks. Specifically, I wrote this for legacy Palm/HP [webOS](http://www.webosarchive.com/) devices. Other clients, such as older Macs, could conceivably use this service -- but I haven't tested. Although the specific container and media format required for webOS devices is prescribed in the code, both MeTube and youtube-dl are capable of helping you get other file formats; simply tweak `add.php` to suit your needs.
+I wrote this wrapper for older devices that can't access YouTube, can't use youtube-dl natively, and can't render the MeTube web UI. Such devices would have to be capable of making relatively simple HTTP calls (POST and GET) and of playing back MP4 video containers with MP4 video and AAC audio tracks. Specifically, I wrote this for legacy Palm/HP [webOS](http://www.webosarchive.com/) devices. Other clients, such as older Macs, could conceivably use this service -- but I haven't tested. Although the specific container and media format required for webOS devices is prescribed in the code, youtube-dl is capable of helping you get other file formats; simply tweak `add.php` to suit your needs.
 
 Note: this project was *not* created to steal content from YouTube, and the creator does not condone the use of this project for that purpose. My intent was to facilitate older devices streaming YouTube content and deliberate efforts were taken to ensure caches and temporary files are purged.
 
@@ -22,22 +23,20 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + php-gd
     + php-xml
     + php7.2-curl
-* FFMpeg (If you want to support Reddit videos)
+* youtube-dl
+    + If you're on a Debian-based Linux, the version of youtube-dl in apt doesn't work. [This article helped me](https://askubuntu.com/questions/496417/youtube-dl-not-working).
+* FFMpeg
 
 ## Installation on Bare Metal
 
 * Create a directory to store YouTube downloads, ensure the Apache user and group (usually www-data in Linux) has read and write access to that folder 
-    + see this [Issue](https://github.com/alexta69/metube/issues/7) where I worked through permissions, so you don't repeat my mistakes!
     + successfully writing with FFMPEG required everyone to have read/write access to this folder, so don't include it in your webserver directly!
-* Get MeTube working with that download folder -- the Docker container actually works very well. Follow the [documentation](https://github.com/alexta69/metube/blob/master/README.md) on that project for guidance
 * Configure an Apache Site for the PHP web app (or add a directory to an existing site)
 * Clone this repo into that directory
 * Make the clean-up script executable: `chmod +x youtube-cleanup.sh`
 * Use `crontab -e` to establish the clean-up schedule.
     + Mine looks like: `*/15 * * * * /var/www/metube/youtube-cleanup.sh`
-* Update the `config.php` file to point to:
-    + Your MeTube endpoint URL -- which does not need to be exposed to the Internet (eg: localhost works fine)
-    + Your MeTube port (eg: 8081)
+* Copy `config-sample.php` to `config.php` and edit:
     + The path to your downloads folder (established above)
     + If you want to use the YouTube Search feature, your Google API Key ([get your own for free here](https://developers.google.com/youtube/v3/getting-started))
 
@@ -80,22 +79,31 @@ Optionally, the client may send an alternate Google API Key, which will be honor
 
 The result will be the JSON payload from Google, as described in their [API documentation](https://developers.google.com/youtube/v3/guides/implementation/search), with Live videos filtered out.
 
-### Add
+### add
 
-Once a user has selected the video they want to see, they will want to send an **Add** call to MeTube to fetch and process the video on their behalf. MeTube uses youtube-dl to accomplish this, and this service  simply proxies MeTube. Client identification is the same as in search: if you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
+Once a user has selected the video they want to see, they will want to send an **add** call to youtube-dl to fetch and process the video on their behalf. MeTube uses youtube-dl to accomplish this, and this service simply proxies youtube-dl. Client identification is the same as in search: if you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
 
-Here we also add an additional layer of obfuscation -- both to protect the query content from being garbled in transmission, and to ensure the client is behaving as intended, where my intent is to not service unknown clients that might treat YouTube content unethically. With **Search**, we only asserted that the server knows identity of the client, using a client shared secret. With add, we will also try to validate that the client is trusted by the server with a server shared secret (with the caveat that no retro platform can have any assurance of trust!)
+Here we also add an additional layer of obfuscation -- both to protect the query content from being garbled in transmission, and to ensure the client is behaving as intended, where my intent is to not service unknown clients that might treat YouTube content unethically. With **search**, we only assert that the server knows identity of the client, using a client shared secret. With add, we will also try to validate that the client is trusted by the server with a server shared secret (with the caveat that no retro platform can have any assurance of trust!)
+
+Other optional headers can customize the resulting video file:
+
+* *Convert* if set to true, the video will be converted with ffmpeg before being made available. The target filename will be the same, but additional time should be allowed for the conversion.
+* *Quality* optionally, you can pass a [youtube-dl quality ](https://github.com/ytdl-org/youtube-dl#user-content-format-selection-examples). If not set, `bestvideo` will be used by default.
 
 If the your `config.php` includes a value for `server_id`, this value should be hidden within the POST request. The entire payload of the POST request should be constructed as follows:
 
 * The YouTube URL the user wants to watch, base64 encoded
 * The `server_id` contiguously placed at random within the encoded string
 
-If the request succeeds, a simple JSON response indicating "OK" will be returned. All other responses indicate an error.
+If the request succeeds, a JSON response indicating "OK" and a target file name will be returned. The target filename is assigned by the server at random, and the resulting file will have that file name. Clients can watch for that file using the **list** method. All other responses indicate an error.
 
-### List
+### add-reddit
 
-Once the video request has been added to MeTube, you will need to poll for the appearance of the processed file. MeTube does not issue a ticket, or maintain state for requests, but it does process requests in order. Assuming there aren't simultaneous (or close-to-simultaneous) client requests, your client can assume that the next file to appear in the list is the file for your most recent **Add** call.
+This method acts like the **add** but doesn't use youtube-dl. Instead, the PHP file includes the logic to extract the MP4 from Reddit directly. These videos are always converted using ffmpeg, since they are unlikely to work on retro devices in their default format.
+
+### list
+
+Once the video request has been added to MeTube, you will need to poll for the appearance of the processed file. MeTube does not issue a ticket, or maintain state for requests, but it does process requests in order. Assuming there aren't simultaneous (or close-to-simultaneous) client requests, your client can assume that the next file to appear in the list is the file for your most recent **add** call.
 
 Another caveat is that only new files are new -- if you send the same request again, you will not get a new file as a result. For that reason, maintaining the correct cleanup schedule (as set in cron, above) is important. Too aggressive, and you might delete a file you're using. Not aggressive enough, and you may deny service to a client. Mitigations were added in the webOS client to handle repeated requests within the clean-up schedule.
 
@@ -103,9 +111,9 @@ For these reasons, this service cannot scale. No attempt has been made to solve 
 
 A `list.php` request is a parameterless GET request. Client identification is the same as in search: if you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`. The result will be a JSON structure that enumerates the .MP4 contents of the download folder you configured above.
 
-### Play
+### play
 
-Due to the constraints of my target client platform, the **Play** function has limited security and must be passed in-the-clear as a GET request. No headers can be included. As a result, the obfuscation is similar to the **Add** request:
+Due to the constraints of my target client platform, the **play** function has limited security and must be passed in-the-clear as a GET request. No headers can be included. As a result, the obfuscation is similar to the **add** request:
 
 If your `config.php` includes a value for `server_id`, this value should be hidden within the Query string. The entire query string to `play.php` should be constructed as follows:
 
@@ -118,9 +126,9 @@ The video value, and the decoded filename in the request ID, must match. This de
 
 Depending on how you deploy the various components, you may run into connectivity issues. While debugging it might be helpful to understand the call stack for each function:
 
-* **Search**: client > php-service-wrapper > Google API
-* **Add**: client > php-service-wrapper > MeTube > youtube-dl > YouTube.com
-* **List**: client > php-service-wrapper
-* **Play**: client > php-service-wrapper
+* **search**: client > php-service-wrapper > Google API
+* **add**: client > php-service-wrapper > youtube-dl > YouTube.com
+* **list**: client > php-service-wrapper
+* **play**: client > php-service-wrapper
 
 If you're attempting to Dockerize this service wrapper, it must be able to communicate with the MeTube docker container over HTTP on the specified port.
