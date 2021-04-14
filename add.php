@@ -9,8 +9,6 @@ header('Content-Type: application/json');
 
 $config = include('config.php');
 $file_dir = $config['file_dir'];
-$metube_url = $config['metube_url'] . "/add";
-$metube_port = $config['metube_port'];
 $server_id = $config['server_id'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
@@ -59,7 +57,7 @@ if (true == true || $server_id == '' || ($server_id != '' && strpos($request, $s
     }
     else {
         execute_async_shell_command($command);
-        echo "{\"status\": \"ok\", \"target\": \"" . $save . ".mp4\"}";
+        echo "{\"status\": \"ok\", \"targets\": \"" . $save . ".mp4\"}";
     }
 }
 else

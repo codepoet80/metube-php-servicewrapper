@@ -69,11 +69,8 @@ function list_dir_contents($dir) {
 }
 
 function encode_response($the_response, $server_id) {
-	if (strpos($the_response, "|") !== false) {
-		$strlength = strpos($the_response, "|");
-	} else {
-		$strlength = strlen($the_response);
-	}
+
+	$strlength = strlen($the_response);
 	$split_pos = rand(1, $strlength);
 	$the_response = base64_encode($the_response);
 	$str1 = substr($the_response, 0, $split_pos);
