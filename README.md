@@ -44,7 +44,7 @@ That's it! Once the PHP app is running, you can begin to use it in even the simp
 
 ## Installation in Docker Container
 
-* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. The [docker-compose is provided here](https://github.com/h8pewou/legacy_webos/blob/main/docker-compose.yml) as a reference.
+* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. The [instructions are provided here](https://github.com/h8pewou/legacy_webos/blob/main/README.md#dockerizing-codepoet80s-metube-service-wrapper) as a reference.
 
 ## webOS Usage
 
