@@ -6,7 +6,7 @@ Optionally converts the video to webOS-friendly formats, via ffmepg
 //$debugMode = true; //Switch to true to get verbose shell command output
 
 header('Content-Type: application/json');
-
+include('common.php');
 $config = include('config.php');
 $file_dir = $config['file_dir'];
 $server_id = $config['server_id'];
@@ -15,7 +15,7 @@ $debug_key = $config['debug_key'];
 
 $request = file_get_contents("php://input");
 
-$request_headers = getallheaders();
+$request_headers = get_request_headers();
 if ($client_key != '' && $debug_key != '') {	//If configuration includes both client key values, enforce them
 	if (!array_key_exists('Client-Id', $request_headers)) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: Not authorized\"}";

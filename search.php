@@ -4,13 +4,14 @@ Send a YouTube search request to Google on behalf of a device that cannot
 */
 
 header('Content-Type: application/json');
+include('common.php');
 $config = include('config.php');
 $api_key = $config['api_key'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
 $safeSearch="moderate"; 	//other values here: https://developers.google.com/youtube/v3/docs/search/list
 
-$request_headers = getallheaders();
+$request_headers = get_request_headers();
 if ($client_key != '' && $debug_key != '') {	//If configuration includes both client key values, enforce them
 	if (!array_key_exists('Client-Id', $request_headers)) {
 			echo "{\"status\": \"error\", \"msg\": \"ERROR: Not authorized\"}";
