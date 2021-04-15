@@ -45,7 +45,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
 
     $preset = 'fast';
     $crf = 20;
-    $save = uniqid;
+    $save = uniqid();
     $savepath = $config['file_dir'] . $save . ".mp4";
     $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline -movflags +faststart '" . $savepath . "' 2>&1";
     if ($debugMode) {
