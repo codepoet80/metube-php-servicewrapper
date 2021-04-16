@@ -1,8 +1,8 @@
-# PHP Service Wrapper for MeTube
+# PHP Service Wrapper for Web Videos
 
 ## Introduction
 
-This is a (non-Dockerized) PHP app that "wraps around" [youtube-dl](https://github.com/ytdl-org/youtube-dl) in support of apps on legacy devices. If you have a modern web browser, you probably want the excellent [MeTube web service by Alexta69](https://github.com/alexta69/), and you don't need this project. This wrapper effectively proxies some features, depending on configuration, including:
+This is a PHP app that "wraps around" [youtube-dl](https://github.com/ytdl-org/youtube-dl) in support of apps on legacy devices. If you have a modern web browser, you probably want the excellent [MeTube web service by Alexta69](https://github.com/alexta69/), and you don't need this project. This wrapper effectively proxies some features, depending on configuration, including:
 
 * The ability to search YouTube for videos by name
 * The ability to access youtube-dl retreived content over the web
@@ -44,7 +44,8 @@ That's it! Once the PHP app is running, you can begin to use it in even the simp
 
 ## Installation in Docker Container
 
-* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. The [instructions are provided here](https://github.com/h8pewou/legacy_webos/blob/main/README.md#dockerizing-codepoet80s-metube-service-wrapper) as a reference.
+* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. You can [pull it from Docker Hub](https://hub.docker.com/r/h8pewou/webos-legacy).
+* His [instructions are provided here](https://github.com/h8pewou/legacy_webos/blob/main/README.md#dockerizing-codepoet80s-metube-service-wrapper) as a reference.
 
 ## webOS Usage
 
