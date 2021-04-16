@@ -128,8 +128,9 @@ The video value, and the decoded filename in the request ID, must match. This de
 Depending on how you deploy the various components, you may run into connectivity issues. While debugging it might be helpful to understand the call stack for each function:
 
 * **search**: client > php-service-wrapper > Google API
-* **add**: client > php-service-wrapper > youtube-dl > YouTube.com
-* **list**: client > php-service-wrapper
-* **play**: client > php-service-wrapper
+* **add**: client > php-service-wrapper > youtube-dl > YouTube.com > server file system > ffmpeg (optional) > server file system
+* **add-reddit**: client > php-service-wrapper > reddit.com > server file system > ffmpeg > server file system
+* **list**: client > php-service-wrapper > server file system
+* **play**: client > php-service-wrapper > server file system
 
 If you're attempting to Dockerize this service wrapper, it must be able to communicate with the MeTube docker container over HTTP on the specified port.
