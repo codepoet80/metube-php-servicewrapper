@@ -27,11 +27,11 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + If you're on a Debian-based Linux, the version of youtube-dl in apt doesn't work. [This article helped me](https://askubuntu.com/questions/496417/youtube-dl-not-working).
 * FFMpeg
 
-## Installation in Docker Container
+## Installation via Docker
 
 * Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. You can https://hub.docker.com/r/h8pewou/legacy-webos-youtube-service](https://hub.docker.com/r/h8pewou/legacy-webos-youtube-service).
 * His [instructions are provided here](https://github.com/h8pewou/Legacy-WebOS-Youtube-Service) as a reference.
-*
+
 ## Installation on Bare Metal
 
 * Create a directory to store YouTube downloads, ensure the Apache user and group (usually www-data in Linux) has read and write access to that folder 
