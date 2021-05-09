@@ -29,7 +29,7 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
 
 ## Installation via Docker
 
-* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. You can https://hub.docker.com/r/h8pewou/legacy-webos-youtube-service](https://hub.docker.com/r/h8pewou/legacy-webos-youtube-service).
+* Community contributor h8pewou has successfully dockerized the service wrapper and provided documentation on how he got it working. You can pull the image from here: [https://hub.docker.com/r/h8pewou/legacy-webos-youtube-service](https://hub.docker.com/r/h8pewou/legacy-webos-youtube-service).
 * His [instructions are provided here](https://github.com/h8pewou/Legacy-WebOS-Youtube-Service) as a reference.
 
 ## Installation on Bare Metal
