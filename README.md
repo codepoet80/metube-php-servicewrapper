@@ -25,6 +25,7 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + php7.2-curl
 * youtube-dl
     + If you're on a Debian-based Linux, the version of youtube-dl in apt doesn't work. [This article helped me](https://askubuntu.com/questions/496417/youtube-dl-not-working).
+    + As of October 2021, youtube-dl is heavily throttled by Google. Using [yt-dlp](https://github.com/yt-dlp) with a symlink link like `youtube-dl -> yt-dlp` seems to work around.
 * FFMpeg
 
 ## Installation via Docker
