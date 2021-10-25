@@ -56,6 +56,18 @@ if (file_exists($file_name)) {
 		//guess we couldn't find it
 	}
 
+	if (file_exists($file_name)) {
+		$file_size = (string)(filesize($file_name));
+		header('Content-Type: video/mp4');
+		header('Accept-Ranges: bytes');
+		header('Content-Length: '.$file_size);
+		header("Content-Disposition: inline;");
+		header("Content-Range: bytes .$file_size");
+		header("Content-Transfer-Encoding: binary\n");
+		header('Connection: close');
+		readfile($file_name);
+	}
+/*
 	$file_size = (string)(filesize($file_name));
 	header("Content-Type: video/mp4");
 	header("Accept-Ranges: bytes");
@@ -70,7 +82,7 @@ if (file_exists($file_name)) {
 		header("Content-Transfer-Encoding: binary\n");
 		header('Connection: close');
 		readfile($file_name);
-	}	
+	}*/	
 } else {
 	header("HTTP/1.1 410 Gone");
 	echo ("File doesn't exist<br>");
