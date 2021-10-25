@@ -34,8 +34,12 @@ if ($the_query == "") {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No query.\"}";
 	die;
 }
-
-$search_path = "https://www.googleapis.com/youtube/v3/search?" . $the_query . "&safeSearch=". $safeSearch . "&key=". $api_key;
+if ($_GET["q"] == "")
+{
+	$search_path = "https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&regionCode=US&key=". $api_key;
+} else {
+	$search_path = "https://www.googleapis.com/youtube/v3/search?" . $the_query . "&safeSearch=". $safeSearch . "&key=". $api_key;
+}
 
 $myfile = fopen($search_path, "rb");
 $content = stream_get_contents($myfile);
