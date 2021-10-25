@@ -36,7 +36,10 @@ if ($the_query == "") {
 }
 if ($_GET["q"] == "")
 {
-	$search_path = "https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&maxResults=11&regionCode=US&key=". $api_key;
+	$max = 10;
+	if (isset($_GET["maxResults"]))
+		$max = $_GET["maxResults"];
+	$search_path = "https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&maxResults=" . $max . "&regionCode=US&key=". $api_key;
 } else {
 	$search_path = "https://www.googleapis.com/youtube/v3/search?" . $the_query . "&safeSearch=". $safeSearch . "&key=". $api_key;
 }
