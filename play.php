@@ -46,7 +46,15 @@ $file_name = $request_id;
 $file_name = $dir . $file_name;
 
 if (file_exists($file_name)) {
-	
+	$useXSendFile = false;
+	try {
+		// try to find xsendfile, which is more efficient
+		if (in_array('mod_xsendfile', apache_get_modules())) {
+			$useXSendFile = true;
+		}
+	} catch (Exception $ex) {
+		//guess we couldn't find it
+	}
 
 	if (file_exists($file_name)) {
 		$file_size = (string)(filesize($file_name));
