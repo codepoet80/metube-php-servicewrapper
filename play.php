@@ -61,11 +61,22 @@ if (file_exists($file_name)) {
 		header('Content-Type: video/mp4');
 		header('Accept-Ranges: bytes');
 		header('Content-Length: '.$file_size);
+		if ($useXSendFile) {
+			$fp = fopen($file_name, 'rb');
+			header('X-Sendfile: ' . $file_name);
+			fpassthru($fp);
+		} else {
+			header("Content-Disposition: inline;");
+			header("Content-Range: bytes .$file_size");
+			header("Content-Transfer-Encoding: binary\n");
+			header('Connection: close');
+			readfile($file_name);
+		}/*
 		header("Content-Disposition: inline;");
 		header("Content-Range: bytes .$file_size");
 		header("Content-Transfer-Encoding: binary\n");
 		header('Connection: close');
-		readfile($file_name);
+		readfile($file_name);*/
 	}
 /*
 	$file_size = (string)(filesize($file_name));
