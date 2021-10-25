@@ -25,7 +25,13 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + php7.2-curl
 * youtube-dl
     + If you're on a Debian-based Linux, the version of youtube-dl in apt doesn't work. [This article helped me](https://askubuntu.com/questions/496417/youtube-dl-not-working).
+    + As of October 2021, youtube-dl is heavily throttled by Google. Using [yt-dlp](https://github.com/yt-dlp) with a symlink like `youtube-dl -> yt-dlp` seems to work around.
 * FFMpeg
+
+## Installation via Docker
+
+* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. You can [pull the container from Docker Hub here](https://hub.docker.com/r/h8pewou/legacy-webos-youtube-service).
+* His [instructions are provided here](https://github.com/h8pewou/Legacy-WebOS-Youtube-Service) as a reference.
 
 ## Installation on Bare Metal
 
@@ -41,11 +47,6 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + If you want to use the YouTube Search feature, your Google API Key ([get your own for free here](https://developers.google.com/youtube/v3/getting-started))
 
 That's it! Once the PHP app is running, you can begin to use it in even the simplest of web clients.
-
-## Installation in Docker Container
-
-* Community contributor Nomad84 has successfully dockerized the service wrapper and provided documentation on how he got it working. You can [pull it from Docker Hub](https://hub.docker.com/r/h8pewou/webos-legacy).
-* His [instructions are provided here](https://github.com/h8pewou/legacy_webos/blob/main/README.md#dockerizing-codepoet80s-metube-service-wrapper) as a reference.
 
 ## webOS Usage
 
