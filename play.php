@@ -4,6 +4,9 @@ $config = include('config.php');
 $dir = $config['file_dir'];
 $server_id = $config['server_id'];
 $client_key = $config['client_key'];
+$obscure_filepath = true;
+if (isset($config['obscure_filepath']))
+	$obscure_filepath = $config['obscure_filepath'];
 $debug_key = $config['debug_key'];
 $debug_mode = true;
 
@@ -46,32 +49,38 @@ $file_name = $request_id;
 $file_name = $dir . $file_name;
 
 if (file_exists($file_name)) {
-	$useXSendFile = false;
-	try {
-		// try to find xsendfile, which is more efficient
-		if (in_array('mod_xsendfile', apache_get_modules())) {
-			$useXSendFile = true;
+	if ($obscure_filepath) {
+		$useXSendFile = false;
+		try {
+			// try to find xsendfile, which is more efficient
+			if (in_array('mod_xsendfile', apache_get_modules())) {
+				$useXSendFile = true;
+			}
+		} catch (Exception $ex) {
+			//guess we couldn't find it
 		}
-	} catch (Exception $ex) {
-		//guess we couldn't find it
-	}
 
-	if (file_exists($file_name)) {
-		$file_size = (string)(filesize($file_name));
-		header('Content-Type: video/mp4');
-		header('Accept-Ranges: bytes');
-		header('Content-Length: '.$file_size);
-		if ($useXSendFile) {
-			$fp = fopen($file_name, 'rb');
-			header('X-Sendfile: ' . $file_name);
-			fpassthru($fp);
-		} else {
-			header("Content-Disposition: inline;");
-			header("Content-Range: bytes .$file_size");
-			header("Content-Transfer-Encoding: binary\n");
-			header('Connection: close');
-			readfile($file_name);
+		if (file_exists($file_name)) {
+			$file_size = (string)(filesize($file_name));
+			header('Content-Type: video/mp4');
+			header('Accept-Ranges: bytes');
+			header('Content-Length: '.$file_size);
+			if ($useXSendFile) {
+				$fp = fopen($file_name, 'rb');
+				header('X-Sendfile: ' . $file_name);
+				fpassthru($fp);
+			} else {
+				header("Content-Disposition: inline;");
+				header("Content-Range: bytes .$file_size");
+				header("Content-Transfer-Encoding: binary\n");
+				header('Connection: close');
+				readfile($file_name);
+			}
 		}
+	} else {
+		$file_name_parts = explode("/", $file_name);
+		$file_name = end($file_name_parts);
+        	header("Location: /youtube-dl/" .$file_name);
 	}
 } else {
 	header("HTTP/1.1 410 Gone");
