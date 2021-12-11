@@ -99,7 +99,7 @@ if (file_exists($file_name)) {
 		else $link = "http";
 			$link .= "://";
 		$link .= $_SERVER['HTTP_HOST'] . "/" . $dir . "/" . $file_name;
-		die("Location: " . $link);
+		header("Location: " . $link);
 	}
 } else {
 	header("HTTP/1.1 410 Gone");
