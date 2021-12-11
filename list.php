@@ -26,7 +26,7 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
 //make file list, checking for files that are still changing
 if(is_dir($dir)){
 	$check_array = list_dir_contents($dir);	//get contents of directory with file sizes
-	sleep(1);	//wait a second to see if any files are still being written
+	sleep(2);	//wait two seconds to see if any files are still being written
     $file_array = list_dir_contents($dir);	//get contents of directory with sizes again to exclude busy files
 	$ready_array = array();
 	foreach ($file_array as $thisfile) {
