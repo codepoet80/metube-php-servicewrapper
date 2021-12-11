@@ -102,7 +102,7 @@ if (file_exists($file_name)) {
 		$link .= $_SERVER['HTTP_HOST'] . $dir . "/" . $file_name;
 		//$link .= $_SERVER['REQUEST_URI'];
 		//$link = str_replace("play.php?", $file_name, $link);
-		die("Location: " . $link);*/
+		die("Location: " . $link);
 	}
 } else {
 	header("HTTP/1.1 410 Gone");
