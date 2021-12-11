@@ -89,7 +89,10 @@ if (file_exists($file_name)) {
 	} else {
 		$file_name_parts = explode("/", $file_name);
 		$file_name = end($file_name_parts);
-        die("Location: /youtube-dl/" .$file_name);
+
+		$dirparts = explode("/", $dir);
+		$dir = end($dirparts);
+        die("Location: /" . $dir . "/" .$file_name);
 
 		/*if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
         	$link = "https";
