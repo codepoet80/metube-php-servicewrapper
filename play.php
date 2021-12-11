@@ -87,8 +87,8 @@ if (file_exists($file_name)) {
 			}
 		}
 	} else {
-		//$file_name_parts = explode("/", $file_name);
-		//$file_name = end($file_name_parts);
+		$file_name_parts = explode("/", $file_name);
+		$file_name = end($file_name_parts);
         //header("Location: /" . $dir . "/" .$file_name);
 
 		if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
@@ -97,8 +97,7 @@ if (file_exists($file_name)) {
 			$link .= "://";
 		$link .= $_SERVER['HTTP_HOST'];
 		$link .= $_SERVER['REQUEST_URI'];
-		$link = str_replace("play.php?", $dir, $link);
-		$link .= $cacheID . ".mp3";
+		$link = str_replace("play.php?", $file_name, $link);
 		die("Location: " . $link);
 	}
 } else {
