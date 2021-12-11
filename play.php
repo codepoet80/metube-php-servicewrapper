@@ -90,9 +90,8 @@ if (file_exists($file_name)) {
 		$file_name_parts = explode("/", $file_name);
 		$file_name = end($file_name_parts);
 
-		echo ($dir);
 		$dirparts = explode("/", $dir);
-		$dir = end($dirparts);
+		$dir = prev($dirparts);
         die("Location: /" . $dir . "/" .$file_name);
 
 		/*if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
