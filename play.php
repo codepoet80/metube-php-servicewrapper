@@ -70,11 +70,15 @@ if (file_exists($file_name)) {
 				header('X-Sendfile: ' . $file_name);
 				//fpassthru($fp);
 			} else {
-				header("Content-Disposition: inline;");
+				// dump the file and stop the script
+				$fp = fopen($file_name, 'r');
+				fpassthru($fp);
+				exit;
+				/*header("Content-Disposition: inline;");
 				header("Content-Range: bytes .$file_size");
 				header("Content-Transfer-Encoding: binary\n");
 				header('Connection: close');
-				readfile($file_name);
+				readfile($file_name);*/
 			}
 		}
 	} else {
