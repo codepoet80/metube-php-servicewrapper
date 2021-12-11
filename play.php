@@ -91,6 +91,7 @@ if (file_exists($file_name)) {
 		$file_name = end($file_name_parts);
 
 		$dirparts = explode("/", $dir);
+		$dir = end($dirparts);
 		$dir = prev($dirparts);
         die("Location: /" . $dir . "/" .$file_name);
 
