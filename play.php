@@ -7,6 +7,9 @@ $client_key = $config['client_key'];
 $obscure_filepath = true;
 if (isset($config['obscure_filepath']))
 	$obscure_filepath = $config['obscure_filepath'];
+$allow_xsendfile = false;
+if (isset($config['use_xsendfile']))
+	$allow_xsendfile = $config['use_xsendfile'];
 $debug_key = $config['debug_key'];
 $debug_mode = true;
 
@@ -51,13 +54,15 @@ $file_name = $dir . $file_name;
 if (file_exists($file_name)) {
 	if ($obscure_filepath) {
 		$useXSendFile = false;
-		try {
-			// try to find xsendfile, which is more efficient
-			if (in_array('mod_xsendfile', apache_get_modules())) {
-				$useXSendFile = true;
+		if ($allow_xsendfile) {
+			try {
+				// try to find xsendfile, which is more efficient
+				if (in_array('mod_xsendfile', apache_get_modules())) {
+					$useXSendFile = true;
+				}
+			} catch (Exception $ex) {
+				//guess we couldn't find it
 			}
-		} catch (Exception $ex) {
-			//guess we couldn't find it
 		}
 
 		if (file_exists($file_name)) {
