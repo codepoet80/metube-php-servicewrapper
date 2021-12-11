@@ -87,9 +87,19 @@ if (file_exists($file_name)) {
 			}
 		}
 	} else {
-		$file_name_parts = explode("/", $file_name);
-		$file_name = end($file_name_parts);
-        header("Location: /" . $dir . "/" .$file_name);
+		//$file_name_parts = explode("/", $file_name);
+		//$file_name = end($file_name_parts);
+        //header("Location: /" . $dir . "/" .$file_name);
+
+		if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
+        	$link = "https";
+		else $link = "http";
+			$link .= "://";
+		$link .= $_SERVER['HTTP_HOST'];
+		$link .= $_SERVER['REQUEST_URI'];
+		$link = str_replace("play.php?", $dir, $link);
+		$link .= $cacheID . ".mp3";
+		die("Location: " . $link);
 	}
 } else {
 	header("HTTP/1.1 410 Gone");
