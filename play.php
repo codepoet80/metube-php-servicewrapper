@@ -66,9 +66,9 @@ if (file_exists($file_name)) {
 			header('Accept-Ranges: bytes');
 			header('Content-Length: '.$file_size);
 			if ($useXSendFile) {
-				$fp = fopen($file_name, 'rb');
+				//$fp = fopen($file_name, 'rb');
 				header('X-Sendfile: ' . $file_name);
-				fpassthru($fp);
+				//fpassthru($fp);
 			} else {
 				header("Content-Disposition: inline;");
 				header("Content-Range: bytes .$file_size");
