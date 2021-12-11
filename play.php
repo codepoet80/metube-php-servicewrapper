@@ -93,15 +93,15 @@ if (file_exists($file_name)) {
 		$dirparts = explode("/", $dir);
 		$dir = end($dirparts);
 		$dir = prev($dirparts);
-        die("Location: /" . $dir . "/" .$file_name);
+//        die("Location: /" . $dir . "/" .$file_name);
 
-		/*if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
+		if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
         	$link = "https";
 		else $link = "http";
 			$link .= "://";
-		$link .= $_SERVER['HTTP_HOST'];
-		$link .= $_SERVER['REQUEST_URI'];
-		$link = str_replace("play.php?", $file_name, $link);
+		$link .= $_SERVER['HTTP_HOST'] . $dir . "/" . $file_name;
+		//$link .= $_SERVER['REQUEST_URI'];
+		//$link = str_replace("play.php?", $file_name, $link);
 		die("Location: " . $link);*/
 	}
 } else {
