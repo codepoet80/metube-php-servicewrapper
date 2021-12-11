@@ -80,7 +80,7 @@ if (file_exists($file_name)) {
 	} else {
 		$file_name_parts = explode("/", $file_name);
 		$file_name = end($file_name_parts);
-        	header("Location: /" . $dir . "/" .$file_name);
+        header("Location: /" . $dir . "/" .$file_name);
 	}
 } else {
 	header("HTTP/1.1 410 Gone");

@@ -59,7 +59,7 @@ if (true == true || $server_id == '' || ($server_id != '' && strpos($request, $s
     if (strtolower($request_headers['Convert']) == "true" || strtolower($request_headers['convert']) == "true") {
 	    $command = $command . " convert";
     }
-    if ($debugMode) {
+    if (isset($debugMode) && $debugMode == true) {
         //$output = shell_exec($command);
         echo "{\"status\": \"ok\", \"command\": \"" . $command . "\", \"output\": \"" . $output . "\"}";
     }
