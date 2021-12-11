@@ -11,7 +11,7 @@ $allow_xsendfile = false;
 if (isset($config['use_xsendfile']))
 	$allow_xsendfile = $config['use_xsendfile'];
 $debug_key = $config['debug_key'];
-$debug_mode = true;
+$debug_mode = false;
 
 $request_id = $_GET['requestid'];
 //figure out the query
@@ -71,19 +71,12 @@ if (file_exists($file_name)) {
 			header('Accept-Ranges: bytes');
 			header('Content-Length: '.$file_size);
 			if ($useXSendFile) {
-				//$fp = fopen($file_name, 'rb');
 				header('X-Sendfile: ' . $file_name);
-				//fpassthru($fp);
 			} else {
 				// dump the file and stop the script
 				$fp = fopen($file_name, 'r');
 				fpassthru($fp);
 				exit;
-				/*header("Content-Disposition: inline;");
-				header("Content-Range: bytes .$file_size");
-				header("Content-Transfer-Encoding: binary\n");
-				header('Connection: close');
-				readfile($file_name);*/
 			}
 		}
 	} else {
