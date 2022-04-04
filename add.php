@@ -55,7 +55,7 @@ if (true == true || $server_id == '' || ($server_id != '' && strpos($request, $s
 	}
 
     $save = uniqid();
-    $command = dirname(__FILE__) . "/getconvertyoutube.sh " . $request . " " . $file_dir . " " . $save . " " . $quality;
+    $command = dirname(__FILE__) . "/getconvertyoutube.sh " . escapeshellarg($request) . " " . $file_dir . " " . $save . " " . $quality;
     if (isset($request_headers['Convert']) && strtolower($request_headers['Convert']) == "true" || strtolower($request_headers['convert']) == "true") {
 	    $command = $command . " convert";
     }

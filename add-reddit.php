@@ -47,7 +47,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $crf = 20;
     $save = uniqid();
     $savepath = $config['file_dir'] . $save . ".mp4";
-    $command = "ffmpeg -i '" . $request . "' -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline -movflags +faststart '" . $savepath . "' 2>&1";
+    $command = "ffmpeg -i " . escapeshellarg($request) . " -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline -movflags +faststart " . escapeshellarg($savepath) . " 2>&1";
     if ($debugMode) {
         $output = shell_exec($command);
         echo "{\"status\": \"ok\", \"command\", \"" . $command . "\", \"output\": \"" . $output . "\"}";
