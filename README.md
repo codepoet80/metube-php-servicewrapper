@@ -17,8 +17,8 @@ Note: this project was *not* created to steal content from YouTube, and the crea
 
 This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-size Ubuntu VM in Azure. It probably works on a Mac, and its conceivable that you could run it on Windows as well, but you'd have to have PHP installed for IIS and I didn't build with that scenario in mind. In my environments I have installed:
 
-* Apache2
-* PHP 7.2
+* Apache2 and Nginx
+* PHP 7.3
 * PHP modules:
     + php-gd
     + php-xml
