@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This is a PHP app that "wraps around" [youtube-dl](https://github.com/ytdl-org/youtube-dl) in support of apps on legacy devices. If you have a modern web browser, you probably want the excellent [MeTube web service by Alexta69](https://github.com/alexta69/), and you don't need this project. This wrapper effectively proxies some features, depending on configuration, including:
+This is a PHP app that "wraps around" [youtube-dl](https://github.com/ytdl-org/youtube-dl) and ffmpeg in support of apps on legacy devices. If you have a modern web browser, you probably want the excellent [MeTube web service by Alexta69](https://github.com/alexta69/), and you don't need this project. This wrapper effectively proxies some features, depending on configuration, including:
 
 * The ability to search YouTube for videos by name
 * The ability to access youtube-dl retreived content over the web
