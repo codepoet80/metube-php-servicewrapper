@@ -1,1 +1,1 @@
-<meta http-equiv='refresh' content='0.1;url=http://appcatalog.webosarchive.com/showMuseumDetails.php?app=MeTube' />
+<meta http-equiv='refresh' content='0.1;url=http://appcatalog.webosarchive.org/showMuseumDetails.php?app=MeTube' />

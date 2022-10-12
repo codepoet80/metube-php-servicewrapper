@@ -9,7 +9,7 @@ This is a PHP app that "wraps around" [youtube-dl](https://github.com/ytdl-org/y
 * The ability to convert YouTube and Reddit videos to retro-friendly formats
 * A clean-up script to remove videos (hopefully once they've been watched)
 
-I wrote this wrapper for older devices that can't access YouTube, can't use youtube-dl natively, and can't render the MeTube web UI. Such devices would have to be capable of making relatively simple HTTP calls (POST and GET) and of playing back MP4 video containers with MP4 video and AAC audio tracks. Specifically, I wrote this for legacy Palm/HP [webOS](http://www.webosarchive.com/) devices. Other clients, such as older Macs, could conceivably use this service -- but I haven't tested. Although the specific container and media format required for webOS devices is prescribed in the code, youtube-dl is capable of helping you get other file formats; simply tweak `add.php` to suit your needs.
+I wrote this wrapper for older devices that can't access YouTube, can't use youtube-dl natively, and can't render the MeTube web UI. Such devices would have to be capable of making relatively simple HTTP calls (POST and GET) and of playing back MP4 video containers with MP4 video and AAC audio tracks. Specifically, I wrote this for legacy Palm/HP [webOS](http://www.webosarchive.org/) devices. Other clients, such as older Macs, could conceivably use this service -- but I haven't tested. Although the specific container and media format required for webOS devices is prescribed in the code, youtube-dl is capable of helping you get other file formats; simply tweak `add.php` to suit your needs.
 
 Note: this project was *not* created to steal content from YouTube, and the creator does not condone the use of this project for that purpose. My intent was to facilitate older devices streaming YouTube content and deliberate efforts were taken to ensure caches and temporary files are purged.
 
@@ -50,7 +50,7 @@ That's it! Once the PHP app is running, you can begin to use it in even the simp
 
 ## webOS Usage
 
-This service was made to work with the webOS app [MeTube](https://github.com/codepoet80/webos-metube) on long defunct Palm and HP devices, like Pre and Touchpad. You can use the hosted version, provided by [webOS Archive](http://www.webosarchive.com) without configuration in that client.
+This service was made to work with the webOS app [MeTube](https://github.com/codepoet80/webos-metube) on long defunct Palm and HP devices, like Pre and Touchpad. You can use the hosted version, provided by [webOS Archive](http://www.webosarchive.org) without configuration in that client.
 
 You can also use that client by hosting the service yourself. Follow the set-up directions above, then use the app's Preferences scene to change your Endpoint and API keys. As well as your own Google API key, this service includes a few shared secrets that need to be configured both in the app's Preferences, and in the `config.php` of your service instance.
 
