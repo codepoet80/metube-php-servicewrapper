@@ -68,7 +68,7 @@ function extract_reddit_video_link(string $post_url)
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No Reddit URL found in request.\"}";
 	die;
     }
-    $data = json_decode(file_get_contents("" . $post_url . ".json"), true);
+    $data = json_decode(curl_get_contents("" . $post_url . ".json"), true);
     $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
     return $video_link;
 }
@@ -85,6 +85,18 @@ function execute_async_shell_command($command = null){
 	//The below is better, but didn't work with nginx (did work with apache2)
         //shell_exec("/usr/bin/nohup ".$command." > /dev/null 2>&1 &");
     }
+}
+
+function curl_get_contents($url) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    $data = curl_exec($ch);
+    curl_close($ch);
+    return $data;
 }
 
 ?>
