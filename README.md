@@ -83,7 +83,7 @@ The result will be the JSON payload from Google, as described in their [API docu
 
 ### add
 
-Once a user has selected the video they want to see, they will want to send an **add** call to youtube-dl to fetch and process the video on their behalf. MeTube uses youtube-dl to accomplish this, and this service simply proxies youtube-dl. Client identification is the same as in search: if you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
+Once a user has selected the video they want to see, they client will need to facilitate an **add** call to this service to fetch and process the video on its behalf. MeTube uses youtube-dl to accomplish this, and this service simply proxies youtube-dl. Client identification is the same as in search: if you set a `client_key` (or `debug_key`) value in your `config.php`, the client must send those values along with the request in the form of a header named `Client-Id`
 
 Here we also add an additional layer of obfuscation -- both to protect the query content from being garbled in transmission, and to ensure the client is behaving as intended, where my intent is to not service unknown clients that might treat YouTube content unethically. With **search**, we only assert that the server knows identity of the client, using a client shared secret. With add, we will also try to validate that the client is trusted by the server with a server shared secret (with the caveat that no retro platform can have any assurance of trust!)
 
