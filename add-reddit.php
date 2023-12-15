@@ -34,6 +34,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     //decode inbound request
     $request = str_replace($server_id, "", $request);
     $request = base64_decode($request); //Requested Reddit URL
+    $request = str_replace("www.reddit", "old.reddit", $request);
     $request = extract_reddit_video_link($request);    //Converted Reddit video URL
 
     //check if ffmpeg exists
@@ -69,7 +70,7 @@ function extract_reddit_video_link(string $post_url)
 	die;
     }
     $data = json_decode(curl_get_contents("" . $post_url . ".json"), true);
-    $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url'];
+    $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['hls_url'];
     return $video_link;
 }
 
