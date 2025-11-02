@@ -25,23 +25,42 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
 	}
 }
 
-$the_query = $_SERVER['QUERY_STRING'];
+// Allow client to override API key
 if (isset($_GET["key"])) {
 	$api_key = $_GET["key"];
 }
 
-if ($the_query == "") {
+// Validate and sanitize query parameters
+$allowed_params = ['q', 'maxResults', 'type', 'order', 'videoDefinition', 'videoDuration', 'pageToken', 'channelId'];
+$safe_params = array();
+
+foreach ($allowed_params as $param) {
+	if (isset($_GET[$param])) {
+		// Basic sanitization - allow alphanumeric, spaces, hyphens, underscores
+		$value = $_GET[$param];
+		$safe_params[$param] = $value;
+	}
+}
+
+if (empty($safe_params)) {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No query.\"}";
 	die;
 }
-if ($_GET["q"] == "")
+
+if (!isset($safe_params["q"]) || $safe_params["q"] == "")
 {
 	$max = 10;
-	if (isset($_GET["maxResults"]))
-		$max = $_GET["maxResults"];
-	$search_path = "https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&maxResults=" . $max . "&regionCode=US&key=". $api_key;
+	if (isset($safe_params["maxResults"]))
+		$max = intval($safe_params["maxResults"]);
+	$search_path = "https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&maxResults=" . urlencode($max) . "&regionCode=US&key=". urlencode($api_key);
 } else {
-	$search_path = "https://www.googleapis.com/youtube/v3/search?" . $the_query . "&safeSearch=". $safeSearch . "&key=". $api_key;
+	// Build query string with validated parameters
+	$query_parts = array();
+	foreach ($safe_params as $key => $value) {
+		$query_parts[] = urlencode($key) . "=" . urlencode($value);
+	}
+	$the_query = implode("&", $query_parts);
+	$search_path = "https://www.googleapis.com/youtube/v3/search?" . $the_query . "&safeSearch=". urlencode($safeSearch) . "&key=". urlencode($api_key);
 }
 
 $myfile = fopen($search_path, "rb");

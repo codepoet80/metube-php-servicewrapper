@@ -29,33 +29,38 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
     }
 }
 
-if (true == true || $server_id == '' || ($server_id != '' && strpos($request, $server_id) !== false))		//If configuration includes a server key value, enforce it
+if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== false))		//If configuration includes a server key value, enforce it
 {
     //decode inbound request
     $request = str_replace($server_id, "", $request);
     $request = base64_decode($request); //Requested Reddit URL
 
     //check if ffmpeg exists
-    $try_ffmpeg = trim(shell_exec('type ffmpeg'));
+    $try_ffmpeg = trim(shell_exec('type ffmpeg 2>&1'));
     if (empty($try_ffmpeg) || strpos($try_ffmpeg, "not found") !== false) {
-        echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server. Ensure it is in the PATH.\"}";
+        echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server.\"}";
         die;
     }
 
     //check if youtube-dl exists
-    $try_youtubedl = trim(shell_exec('type youtube-dl'));
+    $try_youtubedl = trim(shell_exec('type youtube-dl 2>&1'));
     if (empty($try_youtubedl) || strpos($try_youtubedl, "not found") !== false) {
-        echo "{\"status\": \"error\", \"msg\": \"ERROR: Youtube-dl not found on server. Ensure it is in the PATH.\"}";
+        echo "{\"status\": \"error\", \"msg\": \"ERROR: Youtube-dl not found on server.\"}";
         die;
     }
     //determine quality
     $quality = "bestvideo";	//allow video quality override at client request
 	if (array_key_exists('Quality', $request_headers)) {
-		$quality = $request_headers['Quality'];
+		$requested_quality = $request_headers['Quality'];
+		// Validate quality parameter to prevent command injection
+		// Only allow alphanumeric characters, brackets, slashes, plus, and equals
+		if (preg_match('/^[a-zA-Z0-9\[\]\/\+\=\-]+$/', $requested_quality)) {
+			$quality = $requested_quality;
+		}
 	}
 
     $save = uniqid();
-    $command = dirname(__FILE__) . "/getconvertyoutube.sh " . escapeshellarg($request) . " " . $file_dir . " " . $save . " " . $quality;
+    $command = dirname(__FILE__) . "/getconvertyoutube.sh " . escapeshellarg($request) . " " . escapeshellarg($file_dir) . " " . escapeshellarg($save) . " " . escapeshellarg($quality);
     if ((isset($request_headers['Convert']) && strtolower($request_headers['Convert']) == "true") ||
         (isset($request_headers['convert']) && strtolower($request_headers['convert']) == "true")) {
             $command = $command . " convert";

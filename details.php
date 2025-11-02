@@ -24,17 +24,35 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
 	}
 }
 
-$the_query = $_SERVER['QUERY_STRING'];
+// Allow client to override API key
 if (isset($_GET["key"])) {
 	$api_key = $_GET["key"];
 }
 
-if ($the_query == "") {
+// Validate and sanitize query parameters
+$allowed_params = ['id', 'part'];
+$safe_params = array();
+
+foreach ($allowed_params as $param) {
+	if (isset($_GET[$param])) {
+		$value = $_GET[$param];
+		$safe_params[$param] = $value;
+	}
+}
+
+if (empty($safe_params)) {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No query.\"}";
 	die;
 }
 
-$search_path = "https://www.googleapis.com/youtube/v3/videos?" . $the_query . "&part=contentDetails&key=" . $api_key;
+// Build query string with validated parameters
+$query_parts = array();
+foreach ($safe_params as $key => $value) {
+	$query_parts[] = urlencode($key) . "=" . urlencode($value);
+}
+$the_query = implode("&", $query_parts);
+
+$search_path = "https://www.googleapis.com/youtube/v3/videos?" . $the_query . "&part=contentDetails&key=" . urlencode($api_key);
 
 $myfile = fopen($search_path, "rb");
 $content = stream_get_contents($myfile);

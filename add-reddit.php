@@ -38,7 +38,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $request = extract_reddit_video_link($request);    //Converted Reddit video URL
 
     //check if ffmpeg exists
-    $try_ffmpeg = trim(shell_exec('type ffmpeg'));
+    $try_ffmpeg = trim(shell_exec('type ffmpeg 2>&1'));
     if (empty($try_ffmpeg) || strpos($try_ffmpeg, "not found") !== false) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server.\"}";
         die;

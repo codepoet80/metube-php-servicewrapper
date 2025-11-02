@@ -48,7 +48,7 @@ $request_id = str_replace($client_key, "", $request_id);
 $request_id = str_replace($debug_key, "", $request_id);
 
 //try to find and send the requested file
-$file_name = $request_id;
+$file_name = basename($request_id);  //Use basename to prevent path traversal
 $file_name = $dir . $file_name;
 
 if (file_exists($file_name)) {
