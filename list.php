@@ -23,22 +23,17 @@ if ($client_key != '' && $debug_key != '') {	//If configuration includes both cl
 	}
 }
 
-//make file list, checking for files that are still changing
+//make file list, excluding files with lock files (in-progress)
 if(is_dir($dir)){
-	$check_array = list_dir_contents($dir);	//get contents of directory with file sizes
-	sleep(2);	//wait two seconds to see if any files are still being written
-    $file_array = list_dir_contents($dir);	//get contents of directory with sizes again to exclude busy files
+	$file_array = list_dir_contents($dir);
 	$ready_array = array();
 	foreach ($file_array as $thisfile) {
-		$changed = false;
-		foreach ($check_array as $checkfile) {
-			if ($checkfile->file == $thisfile->file) {
-				if ($checkfile->size != $thisfile->size) {
-					$changed = true;
-				}
-			}
-		}
-		if (!$changed) {	//reformat for client schema
+		// Check if this file has a corresponding lock file
+		$base_name = pathinfo($thisfile->file, PATHINFO_FILENAME);
+		$lock_file = $dir . '/' . $base_name . '.lock';
+
+		if (!file_exists($lock_file)) {
+			// No lock file = file is ready
 			$newfileObj = (object)[
 				'file' => encode_response($thisfile->file, $server_id),
 			];
@@ -46,7 +41,7 @@ if(is_dir($dir)){
 		}
 	}
 	$return_array = array('files'=> $ready_array);
-    echo json_encode($return_array);
+	echo json_encode($return_array);
 }
 
 function list_dir_contents($dir) {

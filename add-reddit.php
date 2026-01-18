@@ -8,7 +8,9 @@ $debugMode = false; //Switch to true to get verbose shell command output
 header('Content-Type: application/json');
 
 include('common.php');
+include('job-functions.php');
 $config = include('config.php');
+$file_dir = $config['file_dir'];
 $server_id = $config['server_id'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
@@ -33,9 +35,22 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
 {
     //decode inbound request
     $request = str_replace($server_id, "", $request);
-    $request = base64_decode($request); //Requested Reddit URL
-    $request = str_replace("www.reddit", "old.reddit", $request);
-    $request = extract_reddit_video_link($request);    //Converted Reddit video URL
+    $original_url = base64_decode($request); //Requested Reddit URL
+
+    //check for duplicate request (same URL within 30 min)
+    $existing_job = find_duplicate_job($original_url);
+    if ($existing_job !== null) {
+        echo json_encode(array(
+            'status' => 'ok',
+            'target' => $existing_job['target'],
+            'job_id' => $existing_job['job_id'],
+            'duplicate' => true
+        ));
+        die;
+    }
+
+    $reddit_url = str_replace("www.reddit", "old.reddit", $original_url);
+    $hls_url = extract_reddit_video_link($reddit_url);    //Converted Reddit video URL
 
     //check if ffmpeg exists
     $try_ffmpeg = trim(shell_exec('type ffmpeg 2>&1'));
@@ -44,18 +59,29 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
         die;
     }
 
-    $preset = 'fast';
-    $crf = 20;
     $save = uniqid();
-    $savepath = $config['file_dir'] . $save . ".mp4";
-    $command = "ffmpeg -i " . escapeshellarg($request) . " -c:v libx264 -preset " . $preset . " -crf " . $crf . " -profile:v baseline -movflags +faststart " . escapeshellarg($savepath) . " 2>&1";
+    $target = $save . ".mp4";
+
+    //create job for tracking
+    $job_id = create_job($original_url, $target, $file_dir);
+
+    $command = dirname(__FILE__) . "/getconvertreddit.sh " . escapeshellarg($hls_url) . " " . escapeshellarg($file_dir) . " " . escapeshellarg($save) . " " . escapeshellarg($job_id);
+
     if ($debugMode) {
         $output = shell_exec($command);
-        echo "{\"status\": \"ok\", \"command\", \"" . $command . "\", \"output\": \"" . $output . "\"}";
+        echo json_encode(array(
+            'status' => 'ok',
+            'command' => $command,
+            'output' => $output
+        ));
     }
     else {
         execute_async_shell_command($command);
-	echo "{\"status\": \"ok\", \"target\": \"" . $save . ".mp4\"}";
+        echo json_encode(array(
+            'status' => 'ok',
+            'target' => $target,
+            'job_id' => $job_id
+        ));
     }
 }
 else

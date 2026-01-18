@@ -7,6 +7,7 @@ Optionally converts the video to webOS-friendly formats, via ffmepg
 
 header('Content-Type: application/json');
 include('common.php');
+include('job-functions.php');
 $config = include('config.php');
 $file_dir = $config['file_dir'];
 $server_id = $config['server_id'];
@@ -33,7 +34,19 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
 {
     //decode inbound request
     $request = str_replace($server_id, "", $request);
-    $request = base64_decode($request); //Requested Reddit URL
+    $request = base64_decode($request); //Requested YouTube URL
+
+    //check for duplicate request (same URL within 30 min)
+    $existing_job = find_duplicate_job($request);
+    if ($existing_job !== null) {
+        echo json_encode(array(
+            'status' => 'ok',
+            'target' => $existing_job['target'],
+            'job_id' => $existing_job['job_id'],
+            'duplicate' => true
+        ));
+        die;
+    }
 
     //check if ffmpeg exists
     $try_ffmpeg = trim(shell_exec('type ffmpeg 2>&1'));
@@ -60,18 +73,36 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
 	}
 
     $save = uniqid();
+    $target = $save . ".mp4";
+
+    //create job for tracking
+    $job_id = create_job($request, $target, $file_dir);
+
     $command = dirname(__FILE__) . "/getconvertyoutube.sh " . escapeshellarg($request) . " " . escapeshellarg($file_dir) . " " . escapeshellarg($save) . " " . escapeshellarg($quality);
+    $convert = false;
     if ((isset($request_headers['Convert']) && strtolower($request_headers['Convert']) == "true") ||
         (isset($request_headers['convert']) && strtolower($request_headers['convert']) == "true")) {
             $command = $command . " convert";
+            $convert = true;
     }
+    //pass job_id as 6th argument
+    $command = $command . " " . escapeshellarg($job_id);
+
     if (isset($debugMode) && $debugMode == true) {
         //$output = shell_exec($command);
-        echo "{\"status\": \"ok\", \"command\": \"" . $command . "\", \"output\": \"" . $output . "\"}";
+        echo json_encode(array(
+            'status' => 'ok',
+            'command' => $command,
+            'output' => $output
+        ));
     }
     else {
         execute_async_shell_command($command);
-        echo "{\"status\": \"ok\", \"target\": \"" . $save . ".mp4\"}";
+        echo json_encode(array(
+            'status' => 'ok',
+            'target' => $target,
+            'job_id' => $job_id
+        ));
     }
 }
 else
