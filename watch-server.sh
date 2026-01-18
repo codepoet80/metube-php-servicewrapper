@@ -16,6 +16,8 @@ NC='\033[0m' # No Color
 
 show_status() {
     clear
+    has_error=false
+
     echo -e "${CYAN}=== MeTube Server Watch ===${NC}"
     echo -e "Video Dir: ${BLUE}$VIDEO_DIR${NC}"
     echo -e "Jobs Dir:  ${BLUE}$JOBS_DIR${NC}"
@@ -43,7 +45,7 @@ show_status() {
             case "$status" in
                 downloading) color=$BLUE ;;
                 converting)  color=$YELLOW ;;
-                failed)      color=$RED ;;
+                failed)      color=$RED; has_error=true ;;
                 *)           color=$NC ;;
             esac
 
@@ -53,7 +55,8 @@ show_status() {
 
             # Show error if present
             if [ -f "$error_file" ] && [ -s "$error_file" ]; then
-                echo -e "    ${RED}Error: $(head -1 "$error_file")${NC}"
+                has_error=true
+                echo -e "    ${RED}Error: $(cat "$error_file")${NC}"
             fi
         done
     fi
@@ -109,20 +112,35 @@ show_status() {
             error_file="$VIDEO_DIR/${base}.error"
             echo -ne "  $base: $status"
             if [ -f "$error_file" ] && [ -s "$error_file" ]; then
-                echo -ne " - $(head -1 "$error_file" | head -c 50)"
+                has_error=true
+                echo ""
+                echo -e "    ${RED}$(cat "$error_file")${NC}"
+            else
+                echo ""
             fi
-            echo ""
             found_orphan=true
+            has_error=true
         fi
     done
     [ "$found_orphan" = false ] && echo "  (none)"
     echo ""
 
-    echo -e "${NC}Press Ctrl+C to exit. Refreshing every 2 seconds..."
+    if [ "$has_error" = true ]; then
+        echo -e "${RED}ERROR DETECTED - Press any key to continue...${NC}"
+        return 1
+    else
+        echo -e "${NC}Press Ctrl+C to exit. Refreshing every 2 seconds..."
+        return 0
+    fi
 }
 
 # Main loop
 while true; do
     show_status
-    sleep 2
+    if [ $? -eq 1 ]; then
+        # Error detected, wait for keypress
+        read -n 1 -s
+    else
+        sleep 2
+    fi
 done
