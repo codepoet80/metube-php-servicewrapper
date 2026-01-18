@@ -3,9 +3,9 @@
 # Removes old video files, status files, and job tracking files
 # Run via cron, e.g.: */15 * * * * /var/www/metube/youtube-cleanup.sh
 
-# IMPORTANT: Update this path to match your file_dir configuration
-VIDEO_DIR="/home/pi/youtube-dl"
-JOBS_DIR="/tmp/metube-jobs"
+# Load common environment config (VIDEO_DIR, JOBS_DIR)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
 
 # Remove video files older than 30 minutes
 find "$VIDEO_DIR"/*.mp4 -amin +30 -exec rm -f {} \; 2>/dev/null

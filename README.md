@@ -17,16 +17,19 @@ Note: this project was *not* created to steal content from YouTube, and the crea
 
 This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-size Ubuntu VM in Azure. It probably works on a Mac, and its conceivable that you could run it on Windows as well, but you'd have to have PHP installed for IIS and I didn't build with that scenario in mind. In my environments I have installed:
 
-* Apache2 and Nginx
-* PHP 7.3
+* Apache2 OR Nginx
+* PHP 7 or 8
 * PHP modules:
     + php-gd
     + php-xml
-    + php7.2-curl
-* youtube-dl
-    + If you're on a Debian-based Linux, the version of youtube-dl in apt doesn't work. [This article helped me](https://askubuntu.com/questions/496417/youtube-dl-not-working).
-    + As of October 2021, youtube-dl is heavily throttled by Google. Using [yt-dlp](https://github.com/yt-dlp) with a symlink like `youtube-dl -> yt-dlp` seems to work around.
+    + php-curl
+* yt-dlp
++ Deno
 * FFMpeg
+
+## Config
+
+Update config.sh AND config.php as appropriate for your environment.
 
 ## Installation via Docker
 
