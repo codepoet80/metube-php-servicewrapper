@@ -2,6 +2,9 @@
 # Downloads YouTube video via yt-dlp with optional FFmpeg conversion
 # Args: $1=URL, $2=output_dir, $3=filename (no ext), $4=quality, $5="convert" or job_id, $6=job_id (if $5 is "convert")
 
+# Ensure common binary paths are available (needed when run via web server)
+export PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:$HOME/.deno/bin:$PATH"
+
 URL="$1"
 OUTPUT_DIR="$2"
 FILENAME="$3"
