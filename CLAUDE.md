@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PHP service wrapper around youtube-dl and FFmpeg that provides video downloading/conversion capabilities for legacy devices (specifically webOS devices like Palm Pre and HP Touchpad). Acts as an HTTP API proxy enabling older devices to search YouTube, download/convert videos from YouTube and Reddit, and stream content.
+PHP service wrapper around yt-dlp and FFmpeg that provides video downloading/conversion capabilities for legacy devices (specifically webOS devices like Palm Pre and HP Touchpad). Acts as an HTTP API proxy enabling older devices to search YouTube, download/convert videos from YouTube and Reddit, and stream content.
 
 ## Architecture
 
-**No framework, no package manager** - Simple PHP scripts with shell execution for youtube-dl/FFmpeg operations.
+**No framework, no package manager** - Simple PHP scripts with shell execution for yt-dlp/FFmpeg operations.
 
 ### Key Endpoints
 
@@ -26,6 +26,12 @@ PHP service wrapper around youtube-dl and FFmpeg that provides video downloading
 
 ### Shell Scripts
 
+All shell scripts source `config.sh` for paths and environment setup.
+
+- `config.sh` - Environment configuration (copy from `config-sample.sh`)
+  - `VIDEO_DIR` - Video download directory (must match `file_dir` in config.php)
+  - `JOBS_DIR` - Job tracking directory (default: `/tmp/metube-jobs`)
+  - `PATH` - Ensures yt-dlp, deno, ffmpeg are findable when run via web server
 - `getconvertyoutube.sh` - Orchestrates yt-dlp and optional FFmpeg conversion
   - Args: `$1`=URL, `$2`=output_dir, `$3`=filename, `$4`=quality, `$5`="convert" or job_id, `$6`=job_id (if converting)
   - Writes status to `.status`, progress to `.progress`, errors to `.error` files
@@ -34,11 +40,11 @@ PHP service wrapper around youtube-dl and FFmpeg that provides video downloading
   - Args: `$1`=HLS_URL, `$2`=output_dir, `$3`=filename, `$4`=job_id
   - Same status/progress file pattern as getconvertyoutube.sh
 - `youtube-cleanup.sh` - Removes old files (videos, status files, job JSON) after 30 minutes
-  - **Note**: Contains hardcoded paths - edit `VIDEO_DIR` and `JOBS_DIR` before use
+  - Run via cron, e.g.: `*/15 * * * * /path/to/youtube-cleanup.sh`
 
 ### yt-dlp Reference
 
-The project uses yt-dlp (symlinked as `youtube-dl`) for video extraction. Key format selection syntax:
+The project calls `yt-dlp` directly for video extraction. Key format selection syntax:
 - `bestvideo`/`worstvideo` - quality presets passed via `Quality` header
 - `[ext=mp4]` - filter by container format
 - `+` - merge video and audio streams
@@ -64,7 +70,7 @@ All requests include:
 
 Add requests (`add.php`, `add-reddit.php`) also include:
 - `Convert`: Boolean - whether to run FFmpeg conversion
-- `Quality`: youtube-dl format string (e.g., `bestvideo`, `worstvideo`)
+- `Quality`: yt-dlp format string (e.g., `bestvideo`, `worstvideo`)
 
 ### Request Encoding Scheme
 
@@ -142,9 +148,18 @@ Copy `config-sample.php` to `config.php` and set:
 ## System Dependencies
 
 - PHP 7.3+ with php-gd, php-xml, php-curl
-- youtube-dl (or yt-dlp via symlink - recommended due to throttling)
+- yt-dlp (successor to youtube-dl, handles throttling better)
 - FFmpeg
 - Apache2 or Nginx
+
+## Shell Script Setup
+
+Copy `config-sample.sh` to `config.sh` and configure:
+1. Set `VIDEO_DIR` to match `file_dir` in config.php
+2. Set `JOBS_DIR` (default `/tmp/metube-jobs` is usually fine)
+3. Add paths to yt-dlp, deno, and ffmpeg if not in web server's PATH
+
+The web server (www-data) runs with a minimal PATH, so binaries installed in user directories won't be found unless added to config.sh.
 
 ## Security Considerations
 
