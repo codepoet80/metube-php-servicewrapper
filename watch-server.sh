@@ -14,9 +14,13 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Track error files to clear after acknowledgment
+error_files_to_clear=()
+
 show_status() {
     clear
     has_error=false
+    error_files_to_clear=()
 
     echo -e "${CYAN}=== MeTube Server Watch ===${NC}"
     echo -e "Video Dir: ${BLUE}$VIDEO_DIR${NC}"
@@ -56,6 +60,7 @@ show_status() {
             # Show error if present
             if [ -f "$error_file" ] && [ -s "$error_file" ]; then
                 has_error=true
+                error_files_to_clear+=("$error_file")
                 echo -e "    ${RED}Error: $(cat "$error_file")${NC}"
             fi
         done
@@ -112,12 +117,15 @@ show_status() {
             error_file="$VIDEO_DIR/${base}.error"
             echo -ne "  $base: $status"
             if [ -f "$error_file" ] && [ -s "$error_file" ]; then
-                has_error=true
                 echo ""
                 echo -e "    ${RED}$(cat "$error_file")${NC}"
+                error_files_to_clear+=("$error_file")
             else
                 echo ""
             fi
+            # Track all orphan status files for cleanup
+            error_files_to_clear+=("$status_file")
+            error_files_to_clear+=("$VIDEO_DIR/${base}.progress")
             found_orphan=true
             has_error=true
         fi
@@ -140,6 +148,10 @@ while true; do
     if [ $? -eq 1 ]; then
         # Error detected, wait for keypress
         read -n 1 -s
+        # Clear acknowledged error/status files
+        for f in "${error_files_to_clear[@]}"; do
+            rm -f "$f" 2>/dev/null
+        done
     else
         sleep 2
     fi
