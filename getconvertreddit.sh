@@ -2,8 +2,9 @@
 # Downloads and converts Reddit video via FFmpeg
 # Args: $1=HLS_URL, $2=output_dir, $3=filename (no ext), $4=job_id
 
-# Ensure common binary paths are available (needed when run via web server)
-export PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:$HOME/.deno/bin:$PATH"
+# Load common environment config
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
 
 URL="$1"
 OUTPUT_DIR="$2"
