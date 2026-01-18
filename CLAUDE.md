@@ -41,6 +41,9 @@ All shell scripts source `config.sh` for paths and environment setup.
   - Same status/progress file pattern as getconvertyoutube.sh
 - `youtube-cleanup.sh` - Removes old files (videos, status files, job JSON) after 30 minutes
   - Run via cron, e.g.: `*/15 * * * * /path/to/youtube-cleanup.sh`
+- `watch-server.sh` - Real-time monitoring of downloads, jobs, and errors
+  - Shows active downloads with progress, ready files, job queue, and failed downloads
+  - Pauses on errors and waits for keypress; clears error files when acknowledged
 
 ### yt-dlp Reference
 
@@ -205,6 +208,9 @@ job_abc123.json  # Contains job metadata (url, target, status, timestamps)
 
 ### Test Commands
 ```bash
+# Watch server activity (recommended)
+./watch-server.sh
+
 # Test add endpoint (returns job_id)
 curl -X POST -H "Client-Id: YOUR_KEY" -d "BASE64_ENCODED_URL" http://localhost:8080/add.php
 
@@ -217,7 +223,4 @@ cat /path/to/file_dir/abc123.progress
 
 # Check job file
 cat /tmp/metube-jobs/job_abc123.json
-
-# Watch progress in real-time
-watch -n1 'cat /path/to/file_dir/*.status /path/to/file_dir/*.progress 2>/dev/null'
 ```
