@@ -7,29 +7,29 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
-# Remove video files older than 30 minutes
-find "$VIDEO_DIR"/*.mp4 -amin +30 -exec rm -f {} \; 2>/dev/null
+# Enable nullglob so globs that match nothing expand to nothing (not literal)
+shopt -s nullglob
 
-# Remove associated status files older than 30 minutes
-find "$VIDEO_DIR"/*.lock -amin +30 -exec rm -f {} \; 2>/dev/null
-find "$VIDEO_DIR"/*.status -amin +30 -exec rm -f {} \; 2>/dev/null
-find "$VIDEO_DIR"/*.progress -amin +30 -exec rm -f {} \; 2>/dev/null
-find "$VIDEO_DIR"/*.error -amin +30 -exec rm -f {} \; 2>/dev/null
+# Remove video and status files older than 30 minutes
+find "$VIDEO_DIR" -maxdepth 1 -name "*.mp4" -amin +30 -exec rm -f {} \; >/dev/null 2>&1
+find "$VIDEO_DIR" -maxdepth 1 -name "*.lock" -amin +30 -exec rm -f {} \; >/dev/null 2>&1
+find "$VIDEO_DIR" -maxdepth 1 -name "*.status" -amin +30 -exec rm -f {} \; >/dev/null 2>&1
+find "$VIDEO_DIR" -maxdepth 1 -name "*.progress" -amin +30 -exec rm -f {} \; >/dev/null 2>&1
+find "$VIDEO_DIR" -maxdepth 1 -name "*.error" -amin +30 -exec rm -f {} \; >/dev/null 2>&1
 
 # Remove orphaned status files (status files without corresponding video or lock file)
 for status_file in "$VIDEO_DIR"/*.status; do
-    if [ -f "$status_file" ]; then
-        base_name=$(basename "$status_file" .status)
-        video_file="$VIDEO_DIR/${base_name}.mp4"
-        lock_file="$VIDEO_DIR/${base_name}.lock"
-        # If no video and no lock, remove all associated files
-        if [ ! -f "$video_file" ] && [ ! -f "$lock_file" ]; then
-            rm -f "$VIDEO_DIR/${base_name}".{status,progress,error,lock} 2>/dev/null
-        fi
+    [ -f "$status_file" ] || continue
+    base_name=$(basename "$status_file" .status)
+    video_file="$VIDEO_DIR/${base_name}.mp4"
+    lock_file="$VIDEO_DIR/${base_name}.lock"
+    # If no video and no lock, remove all associated files
+    if [ ! -f "$video_file" ] && [ ! -f "$lock_file" ]; then
+        rm -f "$VIDEO_DIR/${base_name}".{status,progress,error,lock} >/dev/null 2>&1
     fi
 done
 
 # Remove job tracking files older than 30 minutes
 if [ -d "$JOBS_DIR" ]; then
-    find "$JOBS_DIR"/job_*.json -amin +30 -exec rm -f {} \; 2>/dev/null
+    find "$JOBS_DIR" -maxdepth 1 -name "job_*.json" -amin +30 -exec rm -f {} \; >/dev/null 2>&1
 fi
