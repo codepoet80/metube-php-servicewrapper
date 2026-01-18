@@ -6,6 +6,12 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
+# Debug - remove after testing
+echo "DEBUG: SCRIPT_DIR=$SCRIPT_DIR" >> /tmp/metube-debug.log
+echo "DEBUG: PATH=$PATH" >> /tmp/metube-debug.log
+echo "DEBUG: which yt-dlp=$(which yt-dlp)" >> /tmp/metube-debug.log
+echo "DEBUG: which deno=$(which deno)" >> /tmp/metube-debug.log
+
 URL="$1"
 OUTPUT_DIR="$2"
 FILENAME="$3"
