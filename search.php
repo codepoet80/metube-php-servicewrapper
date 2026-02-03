@@ -10,6 +10,8 @@ $api_key = $config['api_key'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
 $safeSearch="moderate"; 	//other values here: https://developers.google.com/youtube/v3/docs/search/list
+$regionCode="US";		//ISO 3166-1 alpha-2 country code for regional results
+$relevanceLanguage="en";	//ISO 639-1 language code for result language priority
 
 $request_headers = get_request_headers();
 if ($client_key != '' && $debug_key != '') {	//If configuration includes both client key values, enforce them
@@ -60,7 +62,7 @@ if (!isset($safe_params["q"]) || $safe_params["q"] == "")
 		$query_parts[] = urlencode($key) . "=" . urlencode($value);
 	}
 	$the_query = implode("&", $query_parts);
-	$search_path = "https://www.googleapis.com/youtube/v3/search?q=" . $the_query . "&safeSearch=". urlencode($safeSearch) . "&part=snippet&key=" . urlencode($api_key);
+	$search_path = "https://www.googleapis.com/youtube/v3/search?" . $the_query . "&safeSearch=". urlencode($safeSearch) . "&regionCode=" . urlencode($regionCode) . "&relevanceLanguage=" . urlencode($relevanceLanguage) . "&part=snippet&key=" . urlencode($api_key);
 }
 
 $myfile = fopen($search_path, "rb");
