@@ -25,8 +25,8 @@ echo "0" > "$PROGRESS_FILE"
 # Get duration for progress calculation (may not work for all HLS streams)
 DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$URL" 2>/dev/null)
 
-# Convert with progress
-ffmpeg -i "$URL" -c:v libx264 -preset fast -crf 20 \
+# Convert with progress (settings for webOS compatibility + speed)
+ffmpeg -i "$URL" -threads 0 -c:v libx264 -preset fast -crf 20 \
     -profile:v baseline -movflags +faststart \
     -c:a aac -b:a 128k \
     -progress pipe:1 "$SAVEPATH" 2>"$ERROR_FILE" | while read -r line; do
