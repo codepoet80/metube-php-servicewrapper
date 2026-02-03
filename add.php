@@ -117,11 +117,8 @@ function execute_async_shell_command($command = null){
 
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') { // windows
         system($command." > NUL");
-    } else{  //*nix
-	shell_exec($command);
-	return;
-	//The below is better, but didn't work with nginx (did work with apache2)
-        //shell_exec("/usr/bin/nohup ".$command." > /dev/null 2>&1 &");
+    } else {  //*nix - run in background with & and redirect output
+        exec($command . " > /dev/null 2>&1 &");
     }
 }
 
