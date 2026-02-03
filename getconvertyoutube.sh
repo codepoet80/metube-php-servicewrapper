@@ -63,9 +63,10 @@ if [ "$DO_CONVERT" = true ]; then
     # Get duration for progress calculation
     DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "/tmp/${FILENAME}.tmp" 2>/dev/null)
 
-    # Convert with progress
-    ffmpeg -i "/tmp/${FILENAME}.tmp" -threads 8 -c:v libx264 -preset superfast -crf 20 \
+    # Convert with progress (settings match Reddit for webOS compatibility)
+    ffmpeg -i "/tmp/${FILENAME}.tmp" -c:v libx264 -preset fast -crf 20 \
         -profile:v baseline -movflags +faststart \
+        -c:a aac -b:a 128k \
         -progress pipe:1 "/tmp/${FILENAME}.mp4" 2>>"$ERROR_FILE" | while read -r line; do
         if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
             TIME_MS="${BASH_REMATCH[1]}"
