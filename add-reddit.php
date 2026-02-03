@@ -62,8 +62,8 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $save = uniqid();
     $target = $save . ".mp4";
 
-    //create job for tracking
-    $job_id = create_job($original_url, $target, $file_dir);
+    //create job for tracking (Reddit videos are always converted)
+    $job_id = create_job($original_url, $target, $file_dir, true);
 
     $command = dirname(__FILE__) . "/getconvertreddit.sh " . escapeshellarg($hls_url) . " " . escapeshellarg($file_dir) . " " . escapeshellarg($save) . " " . escapeshellarg($job_id);
 

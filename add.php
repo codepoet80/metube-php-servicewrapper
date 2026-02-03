@@ -36,8 +36,16 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $request = str_replace($server_id, "", $request);
     $request = base64_decode($request); //Requested YouTube URL
 
+    //check convert flag early (needed for duplicate detection)
+    $convert = false;
+    if ((isset($request_headers['Convert']) && strtolower($request_headers['Convert']) == "true") ||
+        (isset($request_headers['convert']) && strtolower($request_headers['convert']) == "true")) {
+        $convert = true;
+    }
+
     //check for duplicate request (same URL within 30 min)
-    $existing_job = find_duplicate_job($request);
+    //if client needs conversion, only return duplicates that were converted
+    $existing_job = find_duplicate_job($request, $convert);
     if ($existing_job !== null) {
         echo json_encode(array(
             'status' => 'ok',
@@ -75,15 +83,12 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $save = uniqid();
     $target = $save . ".mp4";
 
-    //create job for tracking
-    $job_id = create_job($request, $target, $file_dir);
+    //create job for tracking (include convert flag for future duplicate detection)
+    $job_id = create_job($request, $target, $file_dir, $convert);
 
     $command = dirname(__FILE__) . "/getconvertyoutube.sh " . escapeshellarg($request) . " " . escapeshellarg($file_dir) . " " . escapeshellarg($save) . " " . escapeshellarg($quality);
-    $convert = false;
-    if ((isset($request_headers['Convert']) && strtolower($request_headers['Convert']) == "true") ||
-        (isset($request_headers['convert']) && strtolower($request_headers['convert']) == "true")) {
-            $command = $command . " convert";
-            $convert = true;
+    if ($convert) {
+        $command = $command . " convert";
     }
     //pass job_id as 6th argument
     $command = $command . " " . escapeshellarg($job_id);

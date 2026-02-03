@@ -17,8 +17,9 @@ function ensure_jobs_dir() {
 
 /**
  * Create a new job and return the job_id
+ * $converted: boolean indicating if this job includes ffmpeg conversion
  */
-function create_job($url, $target, $file_dir) {
+function create_job($url, $target, $file_dir, $converted = false) {
     ensure_jobs_dir();
 
     $job_id = 'job_' . uniqid();
@@ -29,6 +30,7 @@ function create_job($url, $target, $file_dir) {
         'url_hash' => $url_hash,
         'url' => $url,
         'target' => $target,
+        'converted' => $converted,
         'status' => 'queued',
         'created' => time(),
         'updated' => time()
@@ -74,8 +76,10 @@ function find_job_by_target($target) {
 
 /**
  * Find a recent duplicate job by URL hash (within TTL)
+ * $needs_conversion: if true, only return duplicates that were converted
+ *                    (converted videos satisfy all requests; unconverted only satisfy unconverted requests)
  */
-function find_duplicate_job($url) {
+function find_duplicate_job($url, $needs_conversion = false) {
     ensure_jobs_dir();
 
     $url_hash = hash('sha256', $url);
@@ -88,6 +92,14 @@ function find_duplicate_job($url) {
             $job['url_hash'] === $url_hash &&
             $job['created'] > $cutoff &&
             $job['status'] !== 'failed') {
+            // Check conversion compatibility:
+            // - If client needs conversion, only return jobs that were converted
+            // - If client doesn't need conversion, any job is fine
+            $job_was_converted = isset($job['converted']) && $job['converted'];
+            if ($needs_conversion && !$job_was_converted) {
+                // Client needs converted, but this job wasn't - skip it
+                continue;
+            }
             return $job;
         }
     }
