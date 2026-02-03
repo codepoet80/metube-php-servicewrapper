@@ -32,8 +32,6 @@ echo "downloading" > "$STATUS_FILE"
 # Download with progress reporting
 # yt-dlp progress template outputs percentage
 yt-dlp "$URL" -f "${QUALITY}[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" \
-    -S "vcodec:h264,acodec:aac" \
-    --merge-output-format mp4 \
     --output "/tmp/${FILENAME}.tmp" \
     --progress-template "download:%(progress._percent_str)s" \
     --newline 2>"$ERROR_FILE" | while read -r line; do
