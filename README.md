@@ -24,8 +24,9 @@ This PHP app was written for a Raspberry Pi, but scaled transparently to a mid-s
     + php-xml
     + php-curl
 * yt-dlp
-+ Deno
+* Deno
 * FFMpeg
+* FFProbe
 
 ## Config
 
