@@ -90,7 +90,44 @@ if [ "$DO_CONVERT" = true ]; then
 
     mv "/tmp/${FILENAME}.mp4" "$OUTPUT_DIR"
 else
-    mv "/tmp/${FILENAME}.tmp" "${OUTPUT_DIR}${FILENAME}.mp4"
+    # Check if video codec is webOS-compatible (h264/avc)
+    VCODEC=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "/tmp/${FILENAME}.tmp" 2>/dev/null)
+
+    if [ "$VCODEC" != "h264" ]; then
+        # Incompatible codec - need to convert
+        echo "converting" > "$STATUS_FILE"
+        echo "0" > "$PROGRESS_FILE"
+
+        DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "/tmp/${FILENAME}.tmp" 2>/dev/null)
+
+        ffmpeg -i "/tmp/${FILENAME}.tmp" -threads 0 -c:v libx264 -preset fast -crf 20 \
+            -profile:v baseline -movflags +faststart \
+            -c:a aac -b:a 128k \
+            -progress pipe:1 "/tmp/${FILENAME}.mp4" 2>>"$ERROR_FILE" | while read -r line; do
+            if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
+                TIME_MS="${BASH_REMATCH[1]}"
+                if [ -n "$DURATION" ] && [ "$DURATION" != "N/A" ]; then
+                    DURATION_MS=$(echo "$DURATION * 1000000" | bc 2>/dev/null || echo "0")
+                    if [ "$DURATION_MS" != "0" ]; then
+                        PCT=$(echo "scale=0; $TIME_MS * 100 / $DURATION_MS" | bc 2>/dev/null || echo "0")
+                        echo "$PCT" > "$PROGRESS_FILE"
+                    fi
+                fi
+            fi
+        done
+
+        rm -f "/tmp/${FILENAME}.tmp"
+
+        if [ ! -f "/tmp/${FILENAME}.mp4" ]; then
+            echo "failed" > "$STATUS_FILE"
+            exit 1
+        fi
+
+        mv "/tmp/${FILENAME}.mp4" "$OUTPUT_DIR"
+    else
+        # h264 - no conversion needed
+        mv "/tmp/${FILENAME}.tmp" "${OUTPUT_DIR}${FILENAME}.mp4"
+    fi
 fi
 
 # Success - update status and clean up
