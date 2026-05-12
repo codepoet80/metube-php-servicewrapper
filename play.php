@@ -74,8 +74,11 @@ if (file_exists($file_name)) {
 				header('X-Sendfile: ' . $file_name);
 			} else {
 				// dump the file and stop the script
+				set_time_limit(0);
+				if (ob_get_level()) ob_end_clean();
 				$fp = fopen($file_name, 'r');
 				fpassthru($fp);
+				fclose($fp);
 				exit;
 			}
 		}
