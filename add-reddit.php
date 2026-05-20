@@ -91,12 +91,25 @@ else
 
 function extract_reddit_video_link(string $post_url)
 {
-    if (!isset($post_url) or trim($post_url) == '' or strpos($post_url, 'reddit.com') === false) {
+    $parsed_post = parse_url($post_url);
+    $post_host = strtolower($parsed_post['host'] ?? '');
+    if (!isset($post_url) or trim($post_url) == '' or !preg_match('/(?:^|\.)reddit\.com$/', $post_host)) {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No Reddit URL found in request.\"}";
 	die;
     }
     $data = json_decode(curl_get_contents("" . $post_url . ".json"), true);
     $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['hls_url'];
+
+    // Fix #2: validate the HLS URL is from a known Reddit CDN before passing to ffmpeg.
+    // If legacy clients break due to SSL changes in curl_get_contents, revert CURLOPT_SSL_VERIFYPEER
+    // in that function (search for "Fix #2: SSL" below) and remove this block together with it.
+    $parsed_hls = parse_url($video_link ?? '');
+    $hls_host = strtolower($parsed_hls['host'] ?? '');
+    if (($parsed_hls['scheme'] ?? '') !== 'https' || !preg_match('/(?:^|\.)redd\.it$/', $hls_host)) {
+        echo "{\"status\": \"error\", \"msg\": \"ERROR: Invalid video URL in Reddit response.\"}";
+        die;
+    }
+
     return $video_link;
 }
 
@@ -117,7 +130,10 @@ function curl_get_contents($url) {
     curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    // Fix #2: SSL — re-enabled peer verification to prevent MITM HLS URL injection.
+    // If legacy clients break (old CA bundles, self-signed Reddit certs), revert this to false
+    // and also remove the HLS URL allowlist block in extract_reddit_video_link() above.
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
     $data = curl_exec($ch);
     curl_close($ch);
