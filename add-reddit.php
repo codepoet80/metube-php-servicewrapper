@@ -14,6 +14,7 @@ $file_dir = $config['file_dir'];
 $server_id = $config['server_id'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
+$reddit_cookies_file = $config['reddit_cookies_file'] ?? '';
 
 $request = file_get_contents("php://input");
 
@@ -97,7 +98,8 @@ function extract_reddit_video_link(string $post_url)
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No Reddit URL found in request.\"}";
 	die;
     }
-    $data = json_decode(curl_get_contents("" . $post_url . ".json"), true);
+    global $reddit_cookies_file;
+    $data = json_decode(curl_get_contents($post_url . ".json", $reddit_cookies_file), true);
     $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['hls_url'];
 
     // Fix #2: validate the HLS URL is from a known Reddit CDN before passing to ffmpeg.
@@ -125,7 +127,7 @@ function execute_async_shell_command($command = null){
     }
 }
 
-function curl_get_contents($url) {
+function curl_get_contents($url, $cookies_file = '') {
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -134,6 +136,9 @@ function curl_get_contents($url) {
     // If legacy clients break (old CA bundles, self-signed Reddit certs), revert this to false
     // and also remove the HLS URL allowlist block in extract_reddit_video_link() above.
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    if ($cookies_file !== '') {
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookies_file);
+    }
 
     $data = curl_exec($ch);
     curl_close($ch);

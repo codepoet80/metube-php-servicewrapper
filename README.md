@@ -107,6 +107,17 @@ If the request succeeds, a JSON response indicating "OK" and a target file name 
 
 This method acts like the **add** but doesn't use youtube-dl. Instead, the PHP file includes the logic to extract the MP4 from Reddit directly. These videos are always converted using ffmpeg, since they are unlikely to work on retro devices in their default format.
 
+**Reddit authentication required:** Reddit now requires authentication even for reading public posts via the JSON API. You must export your Reddit session cookies from a logged-in browser and provide the path on the server in `config.php`.
+
+To export cookies from Firefox:
+1. Install the [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
+2. While logged into Reddit, click the extension icon and choose **Current Site**
+3. Save the file to your server (e.g. `/var/www/reddit_cookies.txt`)
+4. Make it readable by your web server: `chmod 644 /var/www/reddit_cookies.txt`
+5. Set `reddit_cookies_file` to that path in `config.php`
+
+The session cookie will eventually expire; re-export and overwrite the file when Reddit videos stop working again.
+
 ### list
 
 Once the video request has been added to MeTube, you will need to poll for the appearance of the processed file. MeTube does not issue a ticket, or maintain state for requests, but it does process requests in order. Assuming there aren't simultaneous (or close-to-simultaneous) client requests, your client can assume that the next file to appear in the list is the file for your most recent **add** call.
