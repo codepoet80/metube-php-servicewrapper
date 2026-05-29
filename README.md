@@ -49,6 +49,7 @@ Update config.sh AND config.php as appropriate for your environment.
 * Copy `config-sample.php` to `config.php` and edit:
     + The path to your downloads folder (established above)
     + If you want to use the YouTube Search feature, your Google API Key ([get your own for free here](https://developers.google.com/youtube/v3/getting-started))
+    + If you want to use Reddit video support, set `reddit_cookies_file` to the path of your exported Reddit session cookies file (see **add-reddit** below for how to export it)
 
 That's it! Once the PHP app is running, you can begin to use it in even the simplest of web clients.
 
