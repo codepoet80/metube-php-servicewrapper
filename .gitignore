@@ -1,5 +1,6 @@
 config.sh
 config.php
+*cookies*.txt
 .DS_Store
 response.json
 .error

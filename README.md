@@ -49,7 +49,7 @@ Update config.sh AND config.php as appropriate for your environment.
 * Copy `config-sample.php` to `config.php` and edit:
     + The path to your downloads folder (established above)
     + If you want to use the YouTube Search feature, your Google API Key ([get your own for free here](https://developers.google.com/youtube/v3/getting-started))
-    + If you want to use Reddit video support, set `reddit_cookies_file` to the path of your exported Reddit session cookies file (see **add-reddit** below for how to export it)
+    + If you want to use Reddit video support, set `reddit_cookies_file` to the path of your exported Reddit session cookies file — no Reddit account needed, just visit reddit.com in a browser and export the cookies (see **add-reddit** below for how)
 
 That's it! Once the PHP app is running, you can begin to use it in even the simplest of web clients.
 
@@ -108,12 +108,12 @@ If the request succeeds, a JSON response indicating "OK" and a target file name 
 
 This method acts like the **add** but doesn't use youtube-dl. Instead, the PHP file includes the logic to extract the MP4 from Reddit directly. These videos are always converted using ffmpeg, since they are unlikely to work on retro devices in their default format.
 
-**Reddit authentication required:** Reddit now requires authentication even for reading public posts via the JSON API. You must export your Reddit session cookies from a logged-in browser and provide the path on the server in `config.php`.
+**Reddit session cookie required:** Reddit now requires a valid browser session cookie even for reading public posts via the JSON API. You do not need a Reddit account — simply visiting Reddit in a browser is enough to get a valid session cookie.
 
 To export cookies from Firefox:
 1. Install the [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
-2. While logged into Reddit, click the extension icon and choose **Current Site**
-3. Save the file to your server (e.g. `/var/www/reddit_cookies.txt`)
+2. Visit reddit.com (no login required), then click the extension icon and choose **Current Site**
+3. Save the file to your server **outside the web root** (e.g. `/var/www/reddit_cookies.txt`, not inside your PHP app directory). If placed inside the web root, the file will be publicly downloadable and anyone could hijack your Reddit session.
 4. Make it readable by your web server: `chmod 644 /var/www/reddit_cookies.txt`
 5. Set `reddit_cookies_file` to that path in `config.php`
 
