@@ -15,4 +15,13 @@ function get_request_headers() {
 	}
 	return $request_headers;
 }
+
+function have_binary($name) {
+	//The web server runs with a minimal PATH that usually lacks yt-dlp/ffmpeg,
+	//so source config.sh first - the same PATH the shell scripts get.
+	$config_sh = dirname(__FILE__) . '/config.sh';
+	$prefix = is_readable($config_sh) ? '. ' . escapeshellarg($config_sh) . ' && ' : '';
+	$found = trim(shell_exec($prefix . 'command -v ' . escapeshellarg($name) . ' 2>&1'));
+	return ($found !== '' && strpos($found, 'not found') === false);
+}
 ?>

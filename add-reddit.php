@@ -54,8 +54,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $hls_url = extract_reddit_video_link($reddit_url);    //Converted Reddit video URL
 
     //check if ffmpeg exists
-    $try_ffmpeg = trim(shell_exec('type ffmpeg 2>&1'));
-    if (empty($try_ffmpeg) || strpos($try_ffmpeg, "not found") !== false) {
+    if (!have_binary('ffmpeg')) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server.\"}";
         die;
     }
@@ -94,13 +93,29 @@ function extract_reddit_video_link(string $post_url)
 {
     $parsed_post = parse_url($post_url);
     $post_host = strtolower($parsed_post['host'] ?? '');
-    if (!isset($post_url) or trim($post_url) == '' or !preg_match('/(?:^|\.)reddit\.com$/', $post_host)) {
+    $is_short_link = ($post_host === 'v.redd.it');
+    if (!isset($post_url) or trim($post_url) == '' or (!preg_match('/(?:^|\.)reddit\.com$/', $post_host) and !$is_short_link)) {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No Reddit URL found in request.\"}";
 	die;
     }
     global $reddit_cookies_file;
-    $data = json_decode(curl_get_contents($post_url . ".json", $reddit_cookies_file), true);
-    $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['hls_url'];
+
+    // v.redd.it links have no JSON of their own, but redirect to the comments page.
+    if ($is_short_link) {
+        $post_url = resolve_reddit_short_link($post_url, $reddit_cookies_file);
+    }
+
+    $http_code = 0;
+    $data = json_decode(curl_get_contents($post_url . ".json", $reddit_cookies_file, $http_code), true);
+    if (!is_array($data)) {
+        echo json_encode(array('status' => 'error', 'msg' => "ERROR: Reddit returned no usable JSON (HTTP $http_code)."));
+        die;
+    }
+    $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['hls_url'] ?? null;
+    if ($video_link === null) {
+        echo "{\"status\": \"error\", \"msg\": \"ERROR: No video found in Reddit post.\"}";
+        die;
+    }
 
     // Fix #2: validate the HLS URL is from a known Reddit CDN before passing to ffmpeg.
     // If legacy clients break due to SSL changes in curl_get_contents, revert CURLOPT_SSL_VERIFYPEER
@@ -127,7 +142,30 @@ function execute_async_shell_command($command = null){
     }
 }
 
-function curl_get_contents($url, $cookies_file = '') {
+function resolve_reddit_short_link($short_url, $cookies_file = '') {
+    $ch = curl_init($short_url);
+    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+    curl_setopt($ch, CURLOPT_NOBODY, 1);
+    if ($cookies_file !== '') {
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookies_file);
+    }
+    curl_exec($ch);
+    $resolved = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+    @curl_close($ch);
+
+    $resolved_host = strtolower(parse_url($resolved ?? '', PHP_URL_HOST) ?? '');
+    if (!preg_match('/(?:^|\.)reddit\.com$/', $resolved_host)) {
+        echo "{\"status\": \"error\", \"msg\": \"ERROR: Could not resolve v.redd.it link to a Reddit post.\"}";
+        die;
+    }
+    return $resolved;
+}
+
+function curl_get_contents($url, $cookies_file = '', &$http_code = 0) {
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -136,12 +174,18 @@ function curl_get_contents($url, $cookies_file = '') {
     // If legacy clients break (old CA bundles, self-signed Reddit certs), revert this to false
     // and also remove the HLS URL allowlist block in extract_reddit_video_link() above.
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    // Reddit (via Fastly) fingerprints HTTP/2 connections and returns a 403
+    // "blocked by network security" page instead of JSON. Forcing HTTP/1.1
+    // avoids this. Only bites where libcurl is built with nghttp2, which is why
+    // this works on some machines and not others.
+    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
     if ($cookies_file !== '') {
         curl_setopt($ch, CURLOPT_COOKIEFILE, $cookies_file);
     }
 
     $data = curl_exec($ch);
-    curl_close($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    @curl_close($ch);
     return $data;
 }
 
