@@ -9,18 +9,19 @@ $config = include('config.php');
 $api_key = $config['api_key'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
+$client_keys = normalize_keys($client_key);	//client_key may be a string or an array of strings
 $safeSearch="moderate"; 	//other values here: https://developers.google.com/youtube/v3/docs/search/list
 $regionCode="US";		//ISO 3166-1 alpha-2 country code for regional results
 $relevanceLanguage="en";	//ISO 639-1 language code for result language priority
 
 $request_headers = get_request_headers();
-if ($client_key != '' && $debug_key != '') {	//If configuration includes both client key values, enforce them
+if (!empty($client_keys) && $debug_key != '') {	//If configuration includes both client key values, enforce them
 	if (!array_key_exists('Client-Id', $request_headers)) {
 			echo "{\"status\": \"error\", \"msg\": \"ERROR: Not authorized\"}";
 			die;
 	} else {
 			$request_key = $request_headers['Client-Id'];
-			if (($request_key != $client_key) && ($request_key != $debug_key)) {
+			if ((!in_array($request_key, $client_keys, true)) && ($request_key != $debug_key)) {
 					echo "{\"status\": \"error\", \"msg\": \"ERROR: No authorized user.\"}";
 					die;
 			}

@@ -70,7 +70,7 @@ Reference client: [webos-metube](https://github.com/codepoet80/webos-metube) - s
 ### Headers
 
 All requests include:
-- `Client-Id`: Shared secret matching `client_key` or `debug_key` in config
+- `Client-Id`: Shared secret matching `client_key` or `debug_key` in config. `client_key` may be a single string or an array of strings, so multiple clients can each have their own secret.
 
 Add requests (`add.php`, `add-reddit.php`) also include:
 - `Convert`: Boolean - whether to run FFmpeg conversion
@@ -144,7 +144,7 @@ Server cleanup runs every 30 minutes. Duplicate URL requests within that window 
 Copy `config-sample.php` to `config.php` and set:
 - `api_key` - Google YouTube API v3 key
 - `file_dir` - Writable directory for video downloads (must be writable by www-data)
-- `client_key` / `debug_key` - Optional shared secrets for Client-Id header auth
+- `client_key` / `debug_key` - Optional shared secrets for Client-Id header auth. `client_key` accepts a single string or an array of strings (multiple accepted client secrets); `debug_key` is a single string that additionally enables debug mode in `play.php`. Auth is enforced only when both are set.
 - `server_id` - Optional token embedded in request body for obfuscation
 - `obscure_filepath` - If true, PHP streams video content; if false, expose download directory directly
 - `use_xsendfile` - Apache X-Sendfile optimization (requires mod_xsendfile and .htaccess config)

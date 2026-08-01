@@ -12,16 +12,17 @@ $config = include('config.php');
 $file_dir = $config['file_dir'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
+$client_keys = normalize_keys($client_key);	//client_key may be a string or an array of strings
 
 // Authenticate request
 $request_headers = get_request_headers();
-if ($client_key != '' && $debug_key != '') {
+if (!empty($client_keys) && $debug_key != '') {
     if (!array_key_exists('Client-Id', $request_headers)) {
         echo json_encode(array('status' => 'error', 'msg' => 'ERROR: Not authorized'));
         die;
     } else {
         $request_key = $request_headers['Client-Id'];
-        if (($request_key != $client_key) && ($request_key != $debug_key)) {
+        if ((!in_array($request_key, $client_keys, true)) && ($request_key != $debug_key)) {
             echo json_encode(array('status' => 'error', 'msg' => 'ERROR: No authorized user.'));
             die;
         }

@@ -1,9 +1,11 @@
 <?php
 
+include('common.php');
 $config = include('config.php');
 $dir = $config['file_dir'];
 $server_id = $config['server_id'];
 $client_key = $config['client_key'];
+$client_keys = normalize_keys($client_key);	//client_key may be a string or an array of strings
 $obscure_filepath = true;
 if (isset($config['obscure_filepath']))
 	$obscure_filepath = $config['obscure_filepath'];
@@ -31,8 +33,8 @@ $request_id = str_replace($server_id, "", $request_id);
 $request_id = base64_decode($request_id);
 if (strpos($request_id, "|") !== false) {	//Required for a secured request
 	$request_parts = explode("|", $request_id);
-	if ($client_key != '' && $debug_key != '') {	//If configuration includes both client key values, enforce them
-		if ((!in_array($client_key, $request_parts)) && (!in_array($debug_key, $request_parts))) {
+	if (!empty($client_keys) && $debug_key != '') {	//If configuration includes both client key values, enforce them
+		if ((!array_intersect($client_keys, $request_parts)) && (!in_array($debug_key, $request_parts))) {
 			//no client key in request
 			header('HTTP/1.1 403 Forbidden');
 			echo ("Not authorized");
@@ -44,7 +46,7 @@ if (strpos($request_id, "|") !== false) {	//Required for a secured request
 		$debug_mode = true;
 	$request_id = str_replace("|", "", $request_id);
 }
-$request_id = str_replace($client_key, "", $request_id);
+$request_id = str_replace($client_keys, "", $request_id);	//str_replace accepts an array of needles
 $request_id = str_replace($debug_key, "", $request_id);
 
 //try to find and send the requested file

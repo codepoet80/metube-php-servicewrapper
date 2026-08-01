@@ -35,17 +35,18 @@ $file_dir = $config['file_dir'];
 $server_id = $config['server_id'];
 $client_key = $config['client_key'];
 $debug_key = $config['debug_key'];
+$client_keys = normalize_keys($client_key);	//client_key may be a string or an array of strings
 
 $request = file_get_contents("php://input");
 
 $request_headers = get_request_headers();
-if ($client_key != '' && $debug_key != '') {	//If configuration includes both client key values, enforce them
+if (!empty($client_keys) && $debug_key != '') {	//If configuration includes both client key values, enforce them
 	if (!array_key_exists('Client-Id', $request_headers)) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: Not authorized\"}";
         die;
 	} else {
         $request_key = $request_headers['Client-Id'];
-        if (($request_key != $client_key) && ($request_key != $debug_key)) {
+        if ((!in_array($request_key, $client_keys, true)) && ($request_key != $debug_key)) {
             echo "{\"status\": \"error\", \"msg\": \"ERROR: No authorized user.\"}";
             die;
         }

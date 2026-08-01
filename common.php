@@ -16,6 +16,12 @@ function get_request_headers() {
 	return $request_headers;
 }
 
+function normalize_keys($value) {
+	//A config key may be a single string or an array of strings; return a
+	//clean list so callers can accept multiple client secrets uniformly.
+	return array_values(array_filter((array) $value, function($k) { return $k !== ''; }));
+}
+
 function have_binary($name) {
 	//The web server runs with a minimal PATH that usually lacks yt-dlp/ffmpeg,
 	//so source config.sh first - the same PATH the shell scripts get.
