@@ -57,16 +57,14 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     }
 
     //check if ffmpeg exists
-    $try_ffmpeg = trim(shell_exec('type ffmpeg 2>&1'));
-    if (empty($try_ffmpeg) || strpos($try_ffmpeg, "not found") !== false) {
+    if (!have_binary('ffmpeg')) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: FFMpeg not found on server.\"}";
         die;
     }
 
-    //check if youtube-dl exists
-    $try_youtubedl = trim(shell_exec('type youtube-dl 2>&1'));
-    if (empty($try_youtubedl) || strpos($try_youtubedl, "not found") !== false) {
-        echo "{\"status\": \"error\", \"msg\": \"ERROR: Youtube-dl not found on server.\"}";
+    //check if yt-dlp exists (getconvertyoutube.sh calls yt-dlp, not youtube-dl)
+    if (!have_binary('yt-dlp')) {
+        echo "{\"status\": \"error\", \"msg\": \"ERROR: yt-dlp not found on server.\"}";
         die;
     }
     //determine quality
