@@ -18,6 +18,7 @@ PHP service wrapper around yt-dlp and FFmpeg that provides video downloading/con
 | `details.php` | YouTube video details proxy - fetches video metadata (duration, etc.) from Google API |
 | `add.php` | YouTube download - invokes `getconvertyoutube.sh` with optional FFmpeg conversion |
 | `add-reddit.php` | Reddit video download - invokes `getconvertreddit.sh` with FFmpeg |
+| `add-dailymotion.php` | Dailymotion download - protocol-identical to `add.php`, also invokes `getconvertyoutube.sh` (already provider-agnostic; yt-dlp handles Dailymotion natively) |
 | `status.php` | Job status endpoint - returns progress, status, errors for a job_id or target |
 | `list.php` | Returns JSON of available MP4 files (excludes files with `.lock` companion) |
 | `play.php` | Video streaming with obfuscation/security checks |

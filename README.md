@@ -119,6 +119,12 @@ To export cookies from Firefox:
 
 The session cookie will eventually expire; re-export and overwrite the file when Reddit videos stop working again.
 
+### add-dailymotion
+
+This method is protocol-identical to **add** (same headers, same base64+`server_id` request encoding, same response shape) — it's a separate named endpoint rather than an extra parameter on `add.php` so a client can address a specific source explicitly, same reasoning as `add-reddit`. Unlike `add-reddit`, there's no separate extraction logic: yt-dlp already has a built-in Dailymotion extractor, so this calls the same `getconvertyoutube.sh` script `add.php` does, unmodified — that script only ever does `yt-dlp "$URL" ...`, nothing YouTube-specific.
+
+Why a Dailymotion source is here at all: legacy webOS's media pipeline can't reach Dailymotion's CDN directly for playback — its HTTP source is locked to the device's original TLS 1.0 stack, and Dailymotion's CDN requires TLS 1.2+. Downloading and re-serving the file, exactly what this project already does for YouTube, is the fix.
+
 ### list
 
 Once the video request has been added to MeTube, you will need to poll for the appearance of the processed file. MeTube does not issue a ticket, or maintain state for requests, but it does process requests in order. Assuming there aren't simultaneous (or close-to-simultaneous) client requests, your client can assume that the next file to appear in the list is the file for your most recent **add** call.
