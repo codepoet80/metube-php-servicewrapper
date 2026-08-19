@@ -11,6 +11,12 @@ OUTPUT_DIR="$2"
 FILENAME="$3"
 QUALITY="$4"
 
+# Max playable height (TouchPad ~768px)
+MAX_COMPATIBLE_HEIGHT=768
+
+# Downscale only (never up) to the height cap above
+SCALE_FILTER="scale=-2:'min(ih,${MAX_COMPATIBLE_HEIGHT})'"
+
 # Determine if converting and get job_id
 if [ "$5" == "convert" ]; then
     DO_CONVERT=true
@@ -47,9 +53,7 @@ yt-dlp "$URL" -f "${QUALITY}[ext=mp4]+bestaudio[ext=m4a]/${QUALITY}+bestaudio/be
     fi
 done
 
-# --merge-output-format forces the final extension to match the merge
-# container, which may not be ".tmp" as literally given above - find
-# whatever file yt-dlp actually produced instead of assuming the name.
+# --merge-output-format can rename the output, so find it rather than assume ".tmp"
 DL_FILE=$(ls "/tmp/${FILENAME}".* 2>/dev/null | grep -v '\.part$' | head -n1)
 
 # Check if download succeeded
@@ -71,12 +75,10 @@ if [ "$DO_CONVERT" = true ]; then
     DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
 
     # Convert with progress (settings for webOS compatibility + speed)
-    # Output to a distinct filename - $DL_FILE may itself already be
-    # named "${FILENAME}.mp4" (yt-dlp's --merge-output-format forces
-    # that), which would otherwise make input and output the same file.
+    # Distinct name - $DL_FILE may already be "*.mp4" itself
     CONVERTED_FILE="/tmp/${FILENAME}.converted.mp4"
     ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
-        -profile:v baseline -movflags +faststart \
+        -profile:v baseline -vf "$SCALE_FILTER" -movflags +faststart \
         -c:a aac -b:a 128k \
         -progress pipe:1 "$CONVERTED_FILE" 2>>"$ERROR_FILE" | while read -r line; do
         if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
@@ -100,22 +102,32 @@ if [ "$DO_CONVERT" = true ]; then
 
     mv "$CONVERTED_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
 else
-    # Check if video codec is webOS-compatible (h264/avc)
-    VCODEC=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
+    # codec_name alone isn't enough - Main/High profile mp4 reports as "h264" too
+    VIDEO_INFO=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,profile,height -of csv=p=0 "$DL_FILE" 2>/dev/null)
+    VCODEC=$(echo "$VIDEO_INFO" | cut -d',' -f1)
+    VPROFILE=$(echo "$VIDEO_INFO" | cut -d',' -f2)
+    VHEIGHT=$(echo "$VIDEO_INFO" | cut -d',' -f3)
 
+    COMPATIBLE=true
     if [ "$VCODEC" != "h264" ]; then
+        COMPATIBLE=false
+    elif [ "$VPROFILE" != "Baseline" ] && [ "$VPROFILE" != "Constrained Baseline" ]; then
+        COMPATIBLE=false
+    elif [[ "$VHEIGHT" =~ ^[0-9]+$ ]] && [ "$VHEIGHT" -gt "$MAX_COMPATIBLE_HEIGHT" ]; then
+        COMPATIBLE=false
+    fi
+
+    if [ "$COMPATIBLE" = false ]; then
         # Incompatible codec - need to convert
         echo "converting" > "$STATUS_FILE"
         echo "0" > "$PROGRESS_FILE"
 
         DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
 
-        # Output to a distinct filename - $DL_FILE may itself already be
-        # named "${FILENAME}.mp4" (yt-dlp's --merge-output-format forces
-        # that), which would otherwise make input and output the same file.
+        # Distinct name - $DL_FILE may already be "*.mp4" itself
         CONVERTED_FILE="/tmp/${FILENAME}.converted.mp4"
         ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
-            -profile:v baseline -movflags +faststart \
+            -profile:v baseline -vf "$SCALE_FILTER" -movflags +faststart \
             -c:a aac -b:a 128k \
             -progress pipe:1 "$CONVERTED_FILE" 2>>"$ERROR_FILE" | while read -r line; do
             if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
@@ -139,7 +151,7 @@ else
 
         mv "$CONVERTED_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
     else
-        # h264 - no conversion needed
+        # Baseline h264 at a compatible resolution - no conversion needed
         mv "$DL_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
     fi
 fi

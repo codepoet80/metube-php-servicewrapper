@@ -75,14 +75,11 @@ function find_job_by_target($target) {
 }
 
 /**
- * Find a recent duplicate job by URL hash (within TTL)
+ * Find a recent duplicate job by URL hash (within TTL). Checks the sidecar
+ * .status file, not the job JSON's 'status' field - nothing ever updates
+ * that after creation, since the shell scripts that do the real work are
+ * bash, not PHP.
  * $needs_conversion: if true, only return duplicates that were converted
- *                    (converted videos satisfy all requests; unconverted only satisfy unconverted requests)
- *
- * The job JSON's 'status' field is never updated after creation (the shell
- * scripts that do the real work are bash, not PHP, and have no way to write
- * it), so it can't be used to detect a failed/stalled prior attempt. Check
- * the sidecar .status file instead - that's the actual source of truth.
  */
 function find_duplicate_job($url, $file_dir, $needs_conversion = false) {
     ensure_jobs_dir();
@@ -99,16 +96,10 @@ function find_duplicate_job($url, $file_dir, $needs_conversion = false) {
             $job['created'] > $cutoff) {
             $status_info = get_target_status($job['target'], $file_dir);
             if (!in_array($status_info['status'], $live_statuses, true)) {
-                // Prior attempt failed, or its sidecar files never existed/
-                // were cleaned up - not a valid duplicate, keep looking.
                 continue;
             }
-            // Check conversion compatibility:
-            // - If client needs conversion, only return jobs that were converted
-            // - If client doesn't need conversion, any job is fine
             $job_was_converted = isset($job['converted']) && $job['converted'];
             if ($needs_conversion && !$job_was_converted) {
-                // Client needs converted, but this job wasn't - skip it
                 continue;
             }
             return $job;
