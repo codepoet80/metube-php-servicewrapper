@@ -34,7 +34,7 @@ echo "downloading" > "$STATUS_FILE"
 yt-dlp "$URL" -f "${QUALITY}[ext=mp4]+bestaudio[ext=m4a]/${QUALITY}+bestaudio/best" \
     -S "vcodec:h264" \
     --merge-output-format mp4 \
-    --output "/tmp/${FILENAME}.tmp" \
+    --output "/tmp/${FILENAME}.%(ext)s" \
     --progress-template "download:%(progress._percent_str)s" \
     --newline 2>"$ERROR_FILE" | while read -r line; do
     # Extract percentage from progress output
@@ -47,8 +47,13 @@ yt-dlp "$URL" -f "${QUALITY}[ext=mp4]+bestaudio[ext=m4a]/${QUALITY}+bestaudio/be
     fi
 done
 
+# --merge-output-format forces the final extension to match the merge
+# container, which may not be ".tmp" as literally given above - find
+# whatever file yt-dlp actually produced instead of assuming the name.
+DL_FILE=$(ls "/tmp/${FILENAME}".* 2>/dev/null | grep -v '\.part$' | head -n1)
+
 # Check if download succeeded
-if [ ! -f "/tmp/${FILENAME}.tmp" ]; then
+if [ -z "$DL_FILE" ] || [ ! -f "$DL_FILE" ]; then
     echo "failed" > "$STATUS_FILE"
     exit 1
 fi
@@ -63,10 +68,10 @@ if [ "$DO_CONVERT" = true ]; then
     echo "0" > "$PROGRESS_FILE"
 
     # Get duration for progress calculation
-    DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "/tmp/${FILENAME}.tmp" 2>/dev/null)
+    DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
 
     # Convert with progress (settings for webOS compatibility + speed)
-    ffmpeg -i "/tmp/${FILENAME}.tmp" -threads 0 -c:v libx264 -preset fast -crf 20 \
+    ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
         -profile:v baseline -movflags +faststart \
         -c:a aac -b:a 128k \
         -progress pipe:1 "/tmp/${FILENAME}.mp4" 2>>"$ERROR_FILE" | while read -r line; do
@@ -82,7 +87,7 @@ if [ "$DO_CONVERT" = true ]; then
         fi
     done
 
-    rm -f "/tmp/${FILENAME}.tmp"
+    rm -f "$DL_FILE"
 
     if [ ! -f "/tmp/${FILENAME}.mp4" ]; then
         echo "failed" > "$STATUS_FILE"
@@ -92,16 +97,16 @@ if [ "$DO_CONVERT" = true ]; then
     mv "/tmp/${FILENAME}.mp4" "$OUTPUT_DIR"
 else
     # Check if video codec is webOS-compatible (h264/avc)
-    VCODEC=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "/tmp/${FILENAME}.tmp" 2>/dev/null)
+    VCODEC=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
 
     if [ "$VCODEC" != "h264" ]; then
         # Incompatible codec - need to convert
         echo "converting" > "$STATUS_FILE"
         echo "0" > "$PROGRESS_FILE"
 
-        DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "/tmp/${FILENAME}.tmp" 2>/dev/null)
+        DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
 
-        ffmpeg -i "/tmp/${FILENAME}.tmp" -threads 0 -c:v libx264 -preset fast -crf 20 \
+        ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
             -profile:v baseline -movflags +faststart \
             -c:a aac -b:a 128k \
             -progress pipe:1 "/tmp/${FILENAME}.mp4" 2>>"$ERROR_FILE" | while read -r line; do
@@ -117,7 +122,7 @@ else
             fi
         done
 
-        rm -f "/tmp/${FILENAME}.tmp"
+        rm -f "$DL_FILE"
 
         if [ ! -f "/tmp/${FILENAME}.mp4" ]; then
             echo "failed" > "$STATUS_FILE"
@@ -127,7 +132,7 @@ else
         mv "/tmp/${FILENAME}.mp4" "$OUTPUT_DIR"
     else
         # h264 - no conversion needed
-        mv "/tmp/${FILENAME}.tmp" "${OUTPUT_DIR}${FILENAME}.mp4"
+        mv "$DL_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
     fi
 fi
 
