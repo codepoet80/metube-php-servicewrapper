@@ -71,10 +71,14 @@ if [ "$DO_CONVERT" = true ]; then
     DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
 
     # Convert with progress (settings for webOS compatibility + speed)
+    # Output to a distinct filename - $DL_FILE may itself already be
+    # named "${FILENAME}.mp4" (yt-dlp's --merge-output-format forces
+    # that), which would otherwise make input and output the same file.
+    CONVERTED_FILE="/tmp/${FILENAME}.converted.mp4"
     ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
         -profile:v baseline -movflags +faststart \
         -c:a aac -b:a 128k \
-        -progress pipe:1 "/tmp/${FILENAME}.mp4" 2>>"$ERROR_FILE" | while read -r line; do
+        -progress pipe:1 "$CONVERTED_FILE" 2>>"$ERROR_FILE" | while read -r line; do
         if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
             TIME_MS="${BASH_REMATCH[1]}"
             if [ -n "$DURATION" ] && [ "$DURATION" != "N/A" ]; then
@@ -89,12 +93,12 @@ if [ "$DO_CONVERT" = true ]; then
 
     rm -f "$DL_FILE"
 
-    if [ ! -f "/tmp/${FILENAME}.mp4" ]; then
+    if [ ! -f "$CONVERTED_FILE" ]; then
         echo "failed" > "$STATUS_FILE"
         exit 1
     fi
 
-    mv "/tmp/${FILENAME}.mp4" "$OUTPUT_DIR"
+    mv "$CONVERTED_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
 else
     # Check if video codec is webOS-compatible (h264/avc)
     VCODEC=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
@@ -106,10 +110,14 @@ else
 
         DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$DL_FILE" 2>/dev/null)
 
+        # Output to a distinct filename - $DL_FILE may itself already be
+        # named "${FILENAME}.mp4" (yt-dlp's --merge-output-format forces
+        # that), which would otherwise make input and output the same file.
+        CONVERTED_FILE="/tmp/${FILENAME}.converted.mp4"
         ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
             -profile:v baseline -movflags +faststart \
             -c:a aac -b:a 128k \
-            -progress pipe:1 "/tmp/${FILENAME}.mp4" 2>>"$ERROR_FILE" | while read -r line; do
+            -progress pipe:1 "$CONVERTED_FILE" 2>>"$ERROR_FILE" | while read -r line; do
             if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
                 TIME_MS="${BASH_REMATCH[1]}"
                 if [ -n "$DURATION" ] && [ "$DURATION" != "N/A" ]; then
@@ -124,12 +132,12 @@ else
 
         rm -f "$DL_FILE"
 
-        if [ ! -f "/tmp/${FILENAME}.mp4" ]; then
+        if [ ! -f "$CONVERTED_FILE" ]; then
             echo "failed" > "$STATUS_FILE"
             exit 1
         fi
 
-        mv "/tmp/${FILENAME}.mp4" "$OUTPUT_DIR"
+        mv "$CONVERTED_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
     else
         # h264 - no conversion needed
         mv "$DL_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
