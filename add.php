@@ -46,7 +46,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
 
     //check for duplicate request (same URL within 30 min)
     //if client needs conversion, only return duplicates that were converted
-    $existing_job = find_duplicate_job($request, $convert);
+    $existing_job = find_duplicate_job($request, $file_dir, $convert);
     if ($existing_job !== null) {
         echo json_encode(array(
             'status' => 'ok',

@@ -40,7 +40,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     $original_url = base64_decode($request); //Requested Reddit URL
 
     //check for duplicate request (same URL within 30 min)
-    $existing_job = find_duplicate_job($original_url);
+    $existing_job = find_duplicate_job($original_url, $file_dir);
     if ($existing_job !== null) {
         echo json_encode(array(
             'status' => 'ok',
