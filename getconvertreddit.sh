@@ -1,15 +1,18 @@
 #!/bin/bash
 # Downloads and converts Reddit video via FFmpeg
-# Args: $1=HLS_URL, $2=output_dir, $3=filename (no ext), $4=job_id
+# Args: $1=video URL, $2=audio URL (empty if none), $3=output_dir, $4=filename (no ext), $5=job_id
+# URLs point directly at Reddit's progressive media files, not HLS playlists -
+# ffmpeg's HLS demuxer mishandles this CDN's BYTERANGE segments.
 
 # Load common environment config
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
-URL="$1"
-OUTPUT_DIR="$2"
-FILENAME="$3"
-JOB_ID="$4"
+VIDEO_URL="$1"
+AUDIO_URL="$2"
+OUTPUT_DIR="$3"
+FILENAME="$4"
+JOB_ID="$5"
 
 # Status file paths (in output dir, using filename as base)
 STATUS_FILE="${OUTPUT_DIR}${FILENAME}.status"
@@ -22,13 +25,21 @@ SAVEPATH="${OUTPUT_DIR}${FILENAME}.mp4"
 echo "converting" > "$STATUS_FILE"
 echo "0" > "$PROGRESS_FILE"
 
-# Get duration for progress calculation (may not work for all HLS streams)
-DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$URL" 2>/dev/null)
+# Get duration for progress calculation
+DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$VIDEO_URL" 2>/dev/null)
+
+if [ -n "$AUDIO_URL" ]; then
+    INPUT_ARGS=(-i "$VIDEO_URL" -i "$AUDIO_URL")
+    MAP_ARGS=(-map 0:v:0 -map 1:a:0 -c:a aac -b:a 128k)
+else
+    INPUT_ARGS=(-i "$VIDEO_URL")
+    MAP_ARGS=()
+fi
 
 # Convert with progress (settings for webOS compatibility + speed)
-ffmpeg -i "$URL" -threads 0 -c:v libx264 -preset fast -crf 20 \
+ffmpeg "${INPUT_ARGS[@]}" -threads 0 -c:v libx264 -preset fast -crf 20 \
     -profile:v baseline -movflags +faststart \
-    -c:a aac -b:a 128k \
+    "${MAP_ARGS[@]}" \
     -progress pipe:1 "$SAVEPATH" 2>"$ERROR_FILE" | while read -r line; do
     if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
         TIME_MS="${BASH_REMATCH[1]}"

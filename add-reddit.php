@@ -52,7 +52,9 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     }
 
     $reddit_url = str_replace("www.reddit", "old.reddit", $original_url);
-    $hls_url = extract_reddit_video_link($reddit_url);    //Converted Reddit video URL
+    $media = extract_reddit_video_link($reddit_url);    // ['video' => url, 'audio' => url|null]
+    $video_url = $media['video'];
+    $audio_url = $media['audio'];
 
     //check if ffmpeg exists
     if (!have_binary('ffmpeg')) {
@@ -66,7 +68,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
     //create job for tracking (Reddit videos are always converted)
     $job_id = create_job($original_url, $target, $file_dir, true);
 
-    $command = dirname(__FILE__) . "/getconvertreddit.sh " . escapeshellarg($hls_url) . " " . escapeshellarg($file_dir) . " " . escapeshellarg($save) . " " . escapeshellarg($job_id);
+    $command = dirname(__FILE__) . "/getconvertreddit.sh " . escapeshellarg($video_url) . " " . escapeshellarg($audio_url ?? '') . " " . escapeshellarg($file_dir) . " " . escapeshellarg($save) . " " . escapeshellarg($job_id);
 
     if ($debugMode) {
         $output = shell_exec($command);
@@ -128,7 +130,95 @@ function extract_reddit_video_link(string $post_url)
         die;
     }
 
-    return $video_link;
+    // Fix #3: ffmpeg's HLS demuxer mishandles this CDN's BYTERANGE segments
+    // (silently truncates output to the first ~4s segment, since segments 2+
+    // omit an explicit byte offset per the HLS spec's "implicit contiguous
+    // offset" rule) and won't pick up the separately-tracked audio rendition
+    // when fed a single video sub-playlist. Each BYTERANGE playlist just
+    // slices one complete file end-to-end, so resolving straight to the
+    // underlying video/audio files and downloading them whole is equivalent
+    // and avoids ffmpeg's HLS path entirely.
+    return resolve_reddit_media_urls($video_link, $reddit_cookies_file);
+}
+
+// Picks the highest-BANDWIDTH video rendition from an HLS master playlist,
+// plus its paired audio rendition (if any), and resolves both down to their
+// underlying progressive media files (via each sub-playlist's EXT-X-MAP).
+// Falls back to ['video' => $master_url, 'audio' => null] if parsing fails.
+function resolve_reddit_media_urls($master_url, $cookies_file) {
+    $fallback = array('video' => $master_url, 'audio' => null);
+
+    $http_code = 0;
+    $master_playlist = curl_get_contents($master_url, $cookies_file, $http_code);
+    if ($master_playlist === false || $http_code >= 400) {
+        return $fallback;
+    }
+
+    $lines = explode("\n", $master_playlist);
+    $best_bandwidth = -1;
+    $best_uri = null;
+    $best_audio_group = null;
+    $audio_groups = array(); // group-id => sub-playlist URI
+
+    for ($i = 0; $i < count($lines); $i++) {
+        $line = trim($lines[$i]);
+        if (strpos($line, '#EXT-X-MEDIA:') === 0 && stripos($line, 'TYPE=AUDIO') !== false) {
+            if (preg_match('/GROUP-ID="([^"]+)"/', $line, $gm) && preg_match('/URI="([^"]+)"/', $line, $um)) {
+                $audio_groups[$gm[1]] = $um[1];
+            }
+        } elseif (strpos($line, '#EXT-X-STREAM-INF:') === 0 && isset($lines[$i + 1])) {
+            $uri = trim($lines[$i + 1]);
+            if ($uri !== '' && $uri[0] !== '#' && preg_match('/BANDWIDTH=(\d+)/', $line, $m)) {
+                $bandwidth = (int)$m[1];
+                if ($bandwidth > $best_bandwidth) {
+                    $best_bandwidth = $bandwidth;
+                    $best_uri = $uri;
+                    $best_audio_group = preg_match('/AUDIO="([^"]+)"/', $line, $am) ? $am[1] : null;
+                }
+            }
+        }
+    }
+    if ($best_uri === null) {
+        return $fallback;
+    }
+
+    $base = substr($master_url, 0, strrpos($master_url, '/') + 1);
+    $video_url = resolve_variant_media_url($base . $best_uri, $cookies_file);
+    if ($video_url === null) {
+        return $fallback;
+    }
+
+    $audio_url = null;
+    if ($best_audio_group !== null && isset($audio_groups[$best_audio_group])) {
+        $audio_url = resolve_variant_media_url($base . $audio_groups[$best_audio_group], $cookies_file);
+    }
+
+    return array('video' => $video_url, 'audio' => $audio_url);
+}
+
+// Fetches a single-rendition HLS sub-playlist and returns the direct URL of
+// the underlying media file it's byte-range-slicing (via EXT-X-MAP), so it
+// can be downloaded as one plain file instead of many BYTERANGE requests.
+function resolve_variant_media_url($variant_url, $cookies_file) {
+    $http_code = 0;
+    $playlist = curl_get_contents($variant_url, $cookies_file, $http_code);
+    if ($playlist === false || $http_code >= 400) {
+        return null;
+    }
+    if (!preg_match('/#EXT-X-MAP:URI="([^"]+)"/', $playlist, $m)) {
+        return null;
+    }
+
+    $base = substr($variant_url, 0, strrpos($variant_url, '/') + 1);
+    $media_url = $base . $m[1];
+
+    $parsed = parse_url($media_url);
+    $host = strtolower($parsed['host'] ?? '');
+    if (($parsed['scheme'] ?? '') !== 'https' || !preg_match('/(?:^|\.)redd\.it$/', $host)) {
+        return null;
+    }
+
+    return $media_url;
 }
 
 function execute_async_shell_command($command = null){
