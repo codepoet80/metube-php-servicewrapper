@@ -8,6 +8,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
+# Max playable height (TouchPad ~768px); downscale only, never up
+MAX_COMPATIBLE_HEIGHT=768
+SCALE_FILTER="scale=-2:'min(ih,${MAX_COMPATIBLE_HEIGHT})'"
+
 VIDEO_URL="$1"
 AUDIO_URL="$2"
 OUTPUT_DIR="$3"
@@ -30,7 +34,7 @@ DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wr
 
 if [ -n "$AUDIO_URL" ]; then
     INPUT_ARGS=(-i "$VIDEO_URL" -i "$AUDIO_URL")
-    MAP_ARGS=(-map 0:v:0 -map 1:a:0 -c:a aac -b:a 128k)
+    MAP_ARGS=(-map 0:v:0 -map 1:a:0 -c:a aac -b:a 128k -ac 2 -ar 44100)
 else
     INPUT_ARGS=(-i "$VIDEO_URL")
     MAP_ARGS=()
@@ -38,7 +42,9 @@ fi
 
 # Convert with progress (settings for webOS compatibility + speed)
 ffmpeg "${INPUT_ARGS[@]}" -threads 0 -c:v libx264 -preset fast -crf 20 \
-    -profile:v baseline -movflags +faststart \
+    -profile:v baseline -level 3.1 -pix_fmt yuv420p \
+    -maxrate 3500k -bufsize 6000k -g 60 \
+    -vf "$SCALE_FILTER" -movflags +faststart \
     "${MAP_ARGS[@]}" \
     -progress pipe:1 "$SAVEPATH" 2>"$ERROR_FILE" | while read -r line; do
     if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then

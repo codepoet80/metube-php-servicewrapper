@@ -78,8 +78,10 @@ if [ "$DO_CONVERT" = true ]; then
     # Distinct name - $DL_FILE may already be "*.mp4" itself
     CONVERTED_FILE="/tmp/${FILENAME}.converted.mp4"
     ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
-        -profile:v baseline -vf "$SCALE_FILTER" -movflags +faststart \
-        -c:a aac -b:a 128k \
+        -profile:v baseline -level 3.1 -pix_fmt yuv420p \
+        -maxrate 3500k -bufsize 6000k -g 60 \
+        -vf "$SCALE_FILTER" -movflags +faststart \
+        -c:a aac -b:a 128k -ac 2 -ar 44100 \
         -progress pipe:1 "$CONVERTED_FILE" 2>>"$ERROR_FILE" | while read -r line; do
         if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
             TIME_MS="${BASH_REMATCH[1]}"
@@ -127,8 +129,10 @@ else
         # Distinct name - $DL_FILE may already be "*.mp4" itself
         CONVERTED_FILE="/tmp/${FILENAME}.converted.mp4"
         ffmpeg -i "$DL_FILE" -threads 0 -c:v libx264 -preset fast -crf 20 \
-            -profile:v baseline -vf "$SCALE_FILTER" -movflags +faststart \
-            -c:a aac -b:a 128k \
+            -profile:v baseline -level 3.1 -pix_fmt yuv420p \
+            -maxrate 3500k -bufsize 6000k -g 60 \
+            -vf "$SCALE_FILTER" -movflags +faststart \
+            -c:a aac -b:a 128k -ac 2 -ar 44100 \
             -progress pipe:1 "$CONVERTED_FILE" 2>>"$ERROR_FILE" | while read -r line; do
             if [[ "$line" =~ ^out_time_ms=([0-9]+) ]]; then
                 TIME_MS="${BASH_REMATCH[1]}"
@@ -151,8 +155,17 @@ else
 
         mv "$CONVERTED_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
     else
-        # Baseline h264 at a compatible resolution - no conversion needed
-        mv "$DL_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
+        # Baseline h264 at a compatible resolution - remux only, to move the moov
+        # atom to the front. webOS cannot report a duration (so cannot seek or
+        # restart) until it has read moov.
+        REMUXED_FILE="/tmp/${FILENAME}.faststart.mp4"
+        if ffmpeg -i "$DL_FILE" -c copy -movflags +faststart -y "$REMUXED_FILE" 2>>"$ERROR_FILE" && [ -s "$REMUXED_FILE" ]; then
+            rm -f "$DL_FILE"
+            mv "$REMUXED_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
+        else
+            rm -f "$REMUXED_FILE"
+            mv "$DL_FILE" "${OUTPUT_DIR}${FILENAME}.mp4"
+        fi
     fi
 fi
 
