@@ -27,7 +27,7 @@ function have_binary($name) {
 	//so source config.sh first - the same PATH the shell scripts get.
 	$config_sh = dirname(__FILE__) . '/config.sh';
 	$prefix = is_readable($config_sh) ? '. ' . escapeshellarg($config_sh) . ' && ' : '';
-	$found = trim(shell_exec($prefix . 'command -v ' . escapeshellarg($name) . ' 2>&1'));
+	$found = trim((string) shell_exec($prefix . 'command -v ' . escapeshellarg($name) . ' 2>&1'));
 	return ($found !== '' && strpos($found, 'not found') === false);
 }
 ?>

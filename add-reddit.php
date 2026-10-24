@@ -114,7 +114,8 @@ function extract_reddit_video_link(string $post_url)
         echo json_encode(array('status' => 'error', 'msg' => "ERROR: Reddit returned no usable JSON (HTTP $http_code)."));
         die;
     }
-    $video_link = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video']['hls_url'] ?? null;
+    $reddit_video = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video'] ?? array();
+    $video_link = $reddit_video['hls_url'] ?? null;
     if ($video_link === null) {
         echo "{\"status\": \"error\", \"msg\": \"ERROR: No video found in Reddit post.\"}";
         die;
@@ -138,7 +139,52 @@ function extract_reddit_video_link(string $post_url)
     // slices one complete file end-to-end, so resolving straight to the
     // underlying video/audio files and downloading them whole is equivalent
     // and avoids ffmpeg's HLS path entirely.
-    return resolve_reddit_media_urls($video_link, $reddit_cookies_file);
+    $media = resolve_reddit_media_urls($video_link, $reddit_cookies_file);
+
+    // Reddit sometimes answers a video's HLS playlist with a cached 403 while
+    // still serving its DASH manifest, which lists the same files.
+    if ($media['video'] === $video_link) {
+        $media = resolve_reddit_dash_urls($reddit_video['dash_url'] ?? '', $reddit_cookies_file) ?? $media;
+    }
+    return $media;
+}
+
+// Picks the highest-bandwidth video and audio files from a DASH manifest.
+// Returns null if the manifest can't be fetched or has no usable video.
+function resolve_reddit_dash_urls($dash_url, $cookies_file) {
+    $http_code = 0;
+    $manifest = curl_get_contents($dash_url, $cookies_file, $http_code);
+    if ($manifest === false || $http_code >= 400) {
+        return null;
+    }
+    $mpd = @simplexml_load_string($manifest);
+    if ($mpd === false) {
+        return null;
+    }
+
+    $base = substr($dash_url, 0, strrpos($dash_url, '/') + 1);
+    $best = array(); // 'video'|'audio' => ['bandwidth' => int, 'url' => string]
+    foreach ($mpd->Period->AdaptationSet as $set) {
+        foreach ($set->Representation as $rep) {
+            $type = strtok((string)($set['contentType'] ?: $rep['mimeType']), '/');
+            $bandwidth = (int)$rep['bandwidth'];
+            if (!isset($best[$type]) || $bandwidth > $best[$type]['bandwidth']) {
+                $best[$type] = array('bandwidth' => $bandwidth, 'url' => $base . trim((string)$rep->BaseURL));
+            }
+        }
+    }
+
+    foreach ($best as $file) {
+        $parsed = parse_url($file['url']);
+        $host = strtolower($parsed['host'] ?? '');
+        if (($parsed['scheme'] ?? '') !== 'https' || !preg_match('/(?:^|\.)redd\.it$/', $host)) {
+            return null;
+        }
+    }
+    if (!isset($best['video'])) {
+        return null;
+    }
+    return array('video' => $best['video']['url'], 'audio' => $best['audio']['url'] ?? null);
 }
 
 // Picks the highest-BANDWIDTH video rendition from an HLS master playlist,
