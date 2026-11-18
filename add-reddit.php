@@ -51,8 +51,7 @@ if ($server_id == '' || ($server_id != '' && strpos($request, $server_id) !== fa
         die;
     }
 
-    $reddit_url = str_replace("www.reddit", "old.reddit", $original_url);
-    $media = extract_reddit_video_link($reddit_url);    // ['video' => url, 'audio' => url|null]
+    $media = extract_reddit_video_link($original_url);    // ['video' => url, 'audio' => url|null]
     $video_url = $media['video'];
     $audio_url = $media['audio'];
 
@@ -96,175 +95,39 @@ function extract_reddit_video_link(string $post_url)
 {
     $parsed_post = parse_url($post_url);
     $post_host = strtolower($parsed_post['host'] ?? '');
-    $is_short_link = ($post_host === 'v.redd.it');
-    if (!isset($post_url) or trim($post_url) == '' or (!preg_match('/(?:^|\.)reddit\.com$/', $post_host) and !$is_short_link)) {
+    if (!preg_match('/(?:^|\.)reddit\.com$/', $post_host) and $post_host !== 'v.redd.it') {
 	echo "{\"status\": \"error\", \"msg\": \"ERROR: No Reddit URL found in request.\"}";
 	die;
     }
     global $reddit_cookies_file;
 
-    // v.redd.it links have no JSON of their own, but redirect to the comments page.
-    if ($is_short_link) {
-        $post_url = resolve_reddit_short_link($post_url, $reddit_cookies_file);
+    // Reddit's bot protection answers libcurl with a 403 "blocked by network
+    // security" page regardless of cookies, but lets yt-dlp through. yt-dlp
+    // also resolves v.redd.it and /video/ share links, and -g prints the
+    // direct progressive video/audio files (ffmpeg's HLS demuxer mishandles
+    // this CDN's BYTERANGE playlists).
+    $config_sh = dirname(__FILE__) . '/config.sh';
+    $command = (is_readable($config_sh) ? '. ' . escapeshellarg($config_sh) . ' && ' : '') . 'yt-dlp --no-update -g -f ' . escapeshellarg('bestvideo+bestaudio/best');
+    if ($reddit_cookies_file !== '') {
+        $command .= ' --cookies ' . escapeshellarg($reddit_cookies_file);
     }
-
-    $http_code = 0;
-    $data = json_decode(curl_get_contents($post_url . ".json", $reddit_cookies_file, $http_code), true);
-    if (!is_array($data)) {
-        echo json_encode(array('status' => 'error', 'msg' => "ERROR: Reddit returned no usable JSON (HTTP $http_code)."));
-        die;
-    }
-    $reddit_video = $data[0]['data']['children'][0]['data']['secure_media']['reddit_video'] ?? array();
-    $video_link = $reddit_video['hls_url'] ?? null;
-    if ($video_link === null) {
-        echo "{\"status\": \"error\", \"msg\": \"ERROR: No video found in Reddit post.\"}";
-        die;
-    }
-
-    // Fix #2: validate the HLS URL is from a known Reddit CDN before passing to ffmpeg.
-    // If legacy clients break due to SSL changes in curl_get_contents, revert CURLOPT_SSL_VERIFYPEER
-    // in that function (search for "Fix #2: SSL" below) and remove this block together with it.
-    $parsed_hls = parse_url($video_link ?? '');
-    $hls_host = strtolower($parsed_hls['host'] ?? '');
-    if (($parsed_hls['scheme'] ?? '') !== 'https' || !preg_match('/(?:^|\.)redd\.it$/', $hls_host)) {
-        echo "{\"status\": \"error\", \"msg\": \"ERROR: Invalid video URL in Reddit response.\"}";
+    exec($command . ' -- ' . escapeshellarg($post_url) . ' 2>&1', $output, $exit_code);
+    $media_urls = preg_grep('/^https:\/\//', $output);
+    if ($exit_code !== 0 || empty($media_urls)) {
+        echo json_encode(array('status' => 'error', 'msg' => end($output) ?: 'ERROR: No video found in Reddit post.'));
         die;
     }
 
-    // Fix #3: ffmpeg's HLS demuxer mishandles this CDN's BYTERANGE segments
-    // (silently truncates output to the first ~4s segment, since segments 2+
-    // omit an explicit byte offset per the HLS spec's "implicit contiguous
-    // offset" rule) and won't pick up the separately-tracked audio rendition
-    // when fed a single video sub-playlist. Each BYTERANGE playlist just
-    // slices one complete file end-to-end, so resolving straight to the
-    // underlying video/audio files and downloading them whole is equivalent
-    // and avoids ffmpeg's HLS path entirely.
-    $media = resolve_reddit_media_urls($video_link, $reddit_cookies_file);
-
-    // Reddit sometimes answers a video's HLS playlist with a cached 403 while
-    // still serving its DASH manifest, which lists the same files.
-    if ($media['video'] === $video_link) {
-        $media = resolve_reddit_dash_urls($reddit_video['dash_url'] ?? '', $reddit_cookies_file) ?? $media;
-    }
-    return $media;
-}
-
-// Picks the highest-bandwidth video and audio files from a DASH manifest.
-// Returns null if the manifest can't be fetched or has no usable video.
-function resolve_reddit_dash_urls($dash_url, $cookies_file) {
-    $http_code = 0;
-    $manifest = curl_get_contents($dash_url, $cookies_file, $http_code);
-    if ($manifest === false || $http_code >= 400) {
-        return null;
-    }
-    $mpd = @simplexml_load_string($manifest);
-    if ($mpd === false) {
-        return null;
-    }
-
-    $base = substr($dash_url, 0, strrpos($dash_url, '/') + 1);
-    $best = array(); // 'video'|'audio' => ['bandwidth' => int, 'url' => string]
-    foreach ($mpd->Period->AdaptationSet as $set) {
-        foreach ($set->Representation as $rep) {
-            $type = strtok((string)($set['contentType'] ?: $rep['mimeType']), '/');
-            $bandwidth = (int)$rep['bandwidth'];
-            if (!isset($best[$type]) || $bandwidth > $best[$type]['bandwidth']) {
-                $best[$type] = array('bandwidth' => $bandwidth, 'url' => $base . trim((string)$rep->BaseURL));
-            }
+    // Only hand ffmpeg files from Reddit's own CDN.
+    foreach ($media_urls as $media_url) {
+        $parsed = parse_url($media_url);
+        if (!preg_match('/(?:^|\.)redd\.it$/', strtolower($parsed['host'] ?? ''))) {
+            echo "{\"status\": \"error\", \"msg\": \"ERROR: Invalid video URL in Reddit response.\"}";
+            die;
         }
     }
-
-    foreach ($best as $file) {
-        $parsed = parse_url($file['url']);
-        $host = strtolower($parsed['host'] ?? '');
-        if (($parsed['scheme'] ?? '') !== 'https' || !preg_match('/(?:^|\.)redd\.it$/', $host)) {
-            return null;
-        }
-    }
-    if (!isset($best['video'])) {
-        return null;
-    }
-    return array('video' => $best['video']['url'], 'audio' => $best['audio']['url'] ?? null);
-}
-
-// Picks the highest-BANDWIDTH video rendition from an HLS master playlist,
-// plus its paired audio rendition (if any), and resolves both down to their
-// underlying progressive media files (via each sub-playlist's EXT-X-MAP).
-// Falls back to ['video' => $master_url, 'audio' => null] if parsing fails.
-function resolve_reddit_media_urls($master_url, $cookies_file) {
-    $fallback = array('video' => $master_url, 'audio' => null);
-
-    $http_code = 0;
-    $master_playlist = curl_get_contents($master_url, $cookies_file, $http_code);
-    if ($master_playlist === false || $http_code >= 400) {
-        return $fallback;
-    }
-
-    $lines = explode("\n", $master_playlist);
-    $best_bandwidth = -1;
-    $best_uri = null;
-    $best_audio_group = null;
-    $audio_groups = array(); // group-id => sub-playlist URI
-
-    for ($i = 0; $i < count($lines); $i++) {
-        $line = trim($lines[$i]);
-        if (strpos($line, '#EXT-X-MEDIA:') === 0 && stripos($line, 'TYPE=AUDIO') !== false) {
-            if (preg_match('/GROUP-ID="([^"]+)"/', $line, $gm) && preg_match('/URI="([^"]+)"/', $line, $um)) {
-                $audio_groups[$gm[1]] = $um[1];
-            }
-        } elseif (strpos($line, '#EXT-X-STREAM-INF:') === 0 && isset($lines[$i + 1])) {
-            $uri = trim($lines[$i + 1]);
-            if ($uri !== '' && $uri[0] !== '#' && preg_match('/BANDWIDTH=(\d+)/', $line, $m)) {
-                $bandwidth = (int)$m[1];
-                if ($bandwidth > $best_bandwidth) {
-                    $best_bandwidth = $bandwidth;
-                    $best_uri = $uri;
-                    $best_audio_group = preg_match('/AUDIO="([^"]+)"/', $line, $am) ? $am[1] : null;
-                }
-            }
-        }
-    }
-    if ($best_uri === null) {
-        return $fallback;
-    }
-
-    $base = substr($master_url, 0, strrpos($master_url, '/') + 1);
-    $video_url = resolve_variant_media_url($base . $best_uri, $cookies_file);
-    if ($video_url === null) {
-        return $fallback;
-    }
-
-    $audio_url = null;
-    if ($best_audio_group !== null && isset($audio_groups[$best_audio_group])) {
-        $audio_url = resolve_variant_media_url($base . $audio_groups[$best_audio_group], $cookies_file);
-    }
-
-    return array('video' => $video_url, 'audio' => $audio_url);
-}
-
-// Fetches a single-rendition HLS sub-playlist and returns the direct URL of
-// the underlying media file it's byte-range-slicing (via EXT-X-MAP), so it
-// can be downloaded as one plain file instead of many BYTERANGE requests.
-function resolve_variant_media_url($variant_url, $cookies_file) {
-    $http_code = 0;
-    $playlist = curl_get_contents($variant_url, $cookies_file, $http_code);
-    if ($playlist === false || $http_code >= 400) {
-        return null;
-    }
-    if (!preg_match('/#EXT-X-MAP:URI="([^"]+)"/', $playlist, $m)) {
-        return null;
-    }
-
-    $base = substr($variant_url, 0, strrpos($variant_url, '/') + 1);
-    $media_url = $base . $m[1];
-
-    $parsed = parse_url($media_url);
-    $host = strtolower($parsed['host'] ?? '');
-    if (($parsed['scheme'] ?? '') !== 'https' || !preg_match('/(?:^|\.)redd\.it$/', $host)) {
-        return null;
-    }
-
-    return $media_url;
+    $media_urls = array_values($media_urls);
+    return array('video' => $media_urls[0], 'audio' => $media_urls[1] ?? null);
 }
 
 function execute_async_shell_command($command = null){
@@ -277,53 +140,6 @@ function execute_async_shell_command($command = null){
     } else {  //*nix - run in background with & and redirect output
         exec($command . " > /dev/null 2>&1 &");
     }
-}
-
-function resolve_reddit_short_link($short_url, $cookies_file = '') {
-    $ch = curl_init($short_url);
-    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-    curl_setopt($ch, CURLOPT_NOBODY, 1);
-    if ($cookies_file !== '') {
-        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookies_file);
-    }
-    curl_exec($ch);
-    $resolved = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
-    @curl_close($ch);
-
-    $resolved_host = strtolower(parse_url($resolved ?? '', PHP_URL_HOST) ?? '');
-    if (!preg_match('/(?:^|\.)reddit\.com$/', $resolved_host)) {
-        echo "{\"status\": \"error\", \"msg\": \"ERROR: Could not resolve v.redd.it link to a Reddit post.\"}";
-        die;
-    }
-    return $resolved;
-}
-
-function curl_get_contents($url, $cookies_file = '', &$http_code = 0) {
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    // Fix #2: SSL — re-enabled peer verification to prevent MITM HLS URL injection.
-    // If legacy clients break (old CA bundles, self-signed Reddit certs), revert this to false
-    // and also remove the HLS URL allowlist block in extract_reddit_video_link() above.
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-    // Reddit (via Fastly) fingerprints HTTP/2 connections and returns a 403
-    // "blocked by network security" page instead of JSON. Forcing HTTP/1.1
-    // avoids this. Only bites where libcurl is built with nghttp2, which is why
-    // this works on some machines and not others.
-    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-    if ($cookies_file !== '') {
-        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookies_file);
-    }
-
-    $data = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    @curl_close($ch);
-    return $data;
 }
 
 ?>
